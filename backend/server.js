@@ -166,7 +166,7 @@ app.post('/api/generate-canvas', async (req, res) => {
       userImageBuffer = Buffer.from(b64Data, 'base64');
     }
     
-    const canvas = await generateSportsCanvas({ titleLine1: name }, userImageBuffer);
+    const canvas = await generateSportsCanvas(req.body, userImageBuffer);
     res.json({ success: true, canvasDataUrl: canvas.toDataURL('image/png') });
   } catch (err) {
     console.error('[Canvas] Preview error:', err);
@@ -209,7 +209,7 @@ app.get('/api/download/:userId', async (req, res) => {
       return res.status(500).send('Error reading raw image');
     }
 
-    const canvas = await generateSportsCanvas({ titleLine1: user.name }, rawBuffer);
+    const canvas = await generateSportsCanvas(user, rawBuffer);
     const finalBuffer = canvas.toBuffer('image/jpeg', { quality: 0.95 });
     
     await redisClient.set(cacheKey, finalBuffer, 'EX', 600); // 10 min cache

@@ -72,6 +72,15 @@ const qrCanvas            = document.getElementById('qrcode-canvas');
 const identityArtContainer= document.getElementById('identity-art-container');
 const identityArtSpinner  = document.getElementById('identity-art-spinner');
 const identityArtImg      = document.getElementById('identity-art-img');
+const btnCloseApp         = document.getElementById('btn-close-app');
+const kioskTimerCircle    = document.getElementById('kiosk-timer-circle');
+const kioskTimerText      = document.getElementById('kiosk-timer-text');
+const timerProgress       = document.getElementById('timer-progress');
+
+const scanPromptOverlay   = document.getElementById('scan-prompt-overlay');
+const btnPromptYes        = document.getElementById('btn-prompt-yes');
+const btnPromptNo         = document.getElementById('btn-prompt-no');
+const promptTimerText     = document.getElementById('prompt-timer-text');
 
 // ─── Inactivity ───────────────────────────────────────────────────────────────
 let inactivityTimer = null;
@@ -95,6 +104,21 @@ function handleInteraction() {
   }
 }
 
+// ─── Long Press Reset ────────────────────────────────────────────────────────
+let longPressTimer = null;
+document.body.addEventListener('pointerdown', () => {
+  longPressTimer = setTimeout(() => {
+    const activeScreen = document.querySelector('.screen.active');
+    if (activeScreen && activeScreen.id === 'screen-success') {
+      showScanPrompt();
+    } else {
+      resetApp();
+    }
+  }, 2000);
+});
+document.body.addEventListener('pointerup', () => clearTimeout(longPressTimer));
+document.body.addEventListener('pointermove', () => clearTimeout(longPressTimer));
+
 // ─── Navigation ───────────────────────────────────────────────────────────────
 function switchScreen(screenName) {
   Object.values(screens).forEach(s => s.classList.remove('active'));
@@ -102,7 +126,98 @@ function switchScreen(screenName) {
   handleInteraction();
 }
 
+let successTimerInterval = null;
+
+function startSuccessTimer(seconds) {
+  if (successTimerInterval) clearInterval(successTimerInterval);
+  if (btnCloseApp) btnCloseApp.classList.remove('hidden');
+  if (kioskTimerCircle) kioskTimerCircle.classList.remove('hidden');
+  
+  let remaining = seconds;
+  const total = seconds;
+  if (kioskTimerText) kioskTimerText.innerText = remaining;
+  if (timerProgress) {
+    timerProgress.style.strokeDashoffset = '0';
+    timerProgress.style.stroke = '#3b82f6';
+  }
+  
+  successTimerInterval = setInterval(() => {
+    remaining--;
+    if (kioskTimerText) kioskTimerText.innerText = remaining;
+    
+    if (timerProgress) {
+      const percentage = remaining / total;
+      const offset = 283 - (percentage * 283);
+      timerProgress.style.strokeDashoffset = offset;
+      
+      if (percentage < 0.25) {
+        timerProgress.style.stroke = '#ef4444';
+      } else if (percentage < 0.5) {
+        timerProgress.style.stroke = '#eab308';
+      }
+    }
+
+    if (remaining <= 0) {
+      clearInterval(successTimerInterval);
+      showScanPrompt();
+    }
+  }, 1000);
+}
+
+let promptTimerInterval = null;
+function showScanPrompt() {
+  if (scanPromptOverlay) {
+    scanPromptOverlay.classList.remove('hidden');
+    // slight delay for transition
+    setTimeout(() => {
+      scanPromptOverlay.classList.remove('opacity-0');
+      if (scanPromptOverlay.children[0]) {
+        scanPromptOverlay.children[0].classList.remove('scale-95');
+      }
+    }, 10);
+    
+    let pTime = 10;
+    if (promptTimerText) promptTimerText.innerText = pTime;
+    promptTimerInterval = setInterval(() => {
+      pTime--;
+      if (promptTimerText) promptTimerText.innerText = pTime;
+      if (pTime <= 0) {
+        clearInterval(promptTimerInterval);
+        resetApp();
+      }
+    }, 1000);
+  } else {
+    resetApp();
+  }
+}
+
+function hideScanPrompt() {
+  if (scanPromptOverlay) {
+    scanPromptOverlay.classList.add('opacity-0');
+    if (scanPromptOverlay.children[0]) {
+      scanPromptOverlay.children[0].classList.add('scale-95');
+    }
+    setTimeout(() => scanPromptOverlay.classList.add('hidden'), 300);
+  }
+  if (promptTimerInterval) clearInterval(promptTimerInterval);
+}
+
+if (btnPromptYes) btnPromptYes.addEventListener('click', resetApp);
+if (btnPromptNo) btnPromptNo.addEventListener('click', () => {
+  hideScanPrompt();
+  startSuccessTimer(60);
+});
+
+if (btnCloseApp) btnCloseApp.addEventListener('click', resetApp);
+if (kioskTimerCircle) kioskTimerCircle.addEventListener('click', () => {
+  startSuccessTimer(60);
+});
+
 function resetApp() {
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
   state.name           = '';
   state.course         = '';
   state.year           = '1';
@@ -131,6 +246,12 @@ function resetApp() {
   identityArtSpinner.style.display = 'block';
   identityArtImg.classList.add('hidden');
   identityArtImg.src = '';
+
+  if (successTimerInterval) clearInterval(successTimerInterval);
+  if (btnCloseApp) btnCloseApp.classList.add('hidden');
+  if (kioskTimerCircle) kioskTimerCircle.classList.add('hidden');
+  
+  hideScanPrompt();
 
   initAuth();
 }
@@ -445,17 +566,17 @@ async function generateAndShowArt() {
       })
     });
     const data = await res.json();
-    if (data.success && data.canvasDataUrl) {
+    if (data.success) {
       identityArtSpinner.style.display = 'none';
       identityArtImg.src = data.canvasDataUrl;
       identityArtImg.classList.remove('hidden');
     } else {
-      // Silently hide if failed — QR still works
-      identityArtContainer.classList.add('hidden');
+      // Art failed, keep spinner hidden but show QR code anyway
+      identityArtSpinner.style.display = 'none';
     }
   } catch (err) {
     console.error('Art generation error:', err);
-    identityArtContainer.classList.add('hidden');
+    identityArtSpinner.style.display = 'none';
   }
 }
 
@@ -500,12 +621,12 @@ async function submitData() {
         successTitle.innerText = 'Success!';
         loadingSpinner.classList.add('hidden');
         socket.disconnect();
-        setTimeout(resetApp, 5000);
+        startSuccessTimer(5);
       } else if (data.status === 'error') {
         successTitle.innerText = 'Error';
         loadingSpinner.classList.add('hidden');
         socket.disconnect();
-        setTimeout(resetApp, 5000);
+        startSuccessTimer(5);
       }
     });
 
@@ -527,7 +648,7 @@ async function submitData() {
       });
 
       socket.disconnect();
-      setTimeout(resetApp, 15000);
+      startSuccessTimer(60);
     });
 
   } catch (err) {
@@ -535,7 +656,7 @@ async function submitData() {
     statusMsg.innerText    = 'Network error. Please try again.';
     successTitle.innerText = 'Connection Failed';
     loadingSpinner.classList.add('hidden');
-    setTimeout(resetApp, 5000);
+    startSuccessTimer(5);
   }
 }
 

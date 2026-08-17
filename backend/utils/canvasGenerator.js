@@ -1,5 +1,6 @@
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
-
+const fs = require('fs');
+const path = require('path');
 // Helper: draw rounded rectangle path
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -28,18 +29,30 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
-  // Fallback defaults for dynamic data
-  const titleLine1 = (data.titleLine1 || 'PLAYER').toUpperCase();
-  const titleLine2 = (data.titleLine2 || 'OF THE').toUpperCase();
-  const titleLine3 = (data.titleLine3 || 'TOURNAMENT').toUpperCase();
+  // Fallback defaults for dynamic data mapped to DB user object
+  const titleLine1 = (data.name || 'STUDENT').toUpperCase();
+  const titleLine2 = 'WELCOME TO';
+  const titleLine3 = 'SRMIST';
   
-  const matchDetails = data.matchDetails || 'FINALS\nIND : 255/5';
-  const statValue = data.statValue || '321';
-  const statLabel = data.statLabel || 'RUNS in the\ntournament';
+  const matchDetails = `ARCHETYPE\n${(data.archetype || 'Explorer').toUpperCase()}`;
   
-  const footerMessage = data.footerMessage || 'Congratulations India on\nSecuring the 3rd T20\nWorld Cup!';
-  const eventName = data.eventName || 'T20\nWORLD\nCUP\n2026';
-  const sponsorName = data.sponsorName || 'DEAR\nABROAD';
+  // Date replacing the percentage stat
+  const today = new Date();
+  const statValue = today.getDate().toString().padStart(2, '0'); 
+  const monthStr = today.toLocaleString('default', { month: 'short' }).toUpperCase();
+  const statLabel = `JOINED\n${monthStr} ${today.getFullYear()}`;
+  
+  const courseStr = data.course || 'SRM University';
+  const footerMessage = `Congratulations on\nstarting your journey at\n${courseStr}!`;
+  const eventName = parseInt(data.year) === 1 ? 'SRM\nFRESHERS\nDAY\n2026' : 'SRM\nBACK TO\nCAMPUS\n2026';
+  
+  const safeAnswers = data.answers || [];
+  // Try to use a second answer as sponsor if available, else generic
+  let sponsorName = 'SRM\nUNIV';
+  if (safeAnswers[1]) {
+    const parts = safeAnswers[1].toUpperCase().split(' ');
+    sponsorName = parts.length > 1 ? `${parts[0]}\n${parts[1]}` : safeAnswers[1].toUpperCase();
+  }
 
   // 1. BACKGROUND (Stadium Sky Gradient)
   const bgGradient = ctx.createLinearGradient(0, 0, 0, H);
@@ -69,6 +82,39 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.6})`;
     ctx.fill();
+  }
+
+  // Try to load a logo image from backend/public/logo.png
+  let logoImg = null;
+  try {
+    const logoPath = path.join(__dirname, '../public/logo.png');
+    if (fs.existsSync(logoPath)) {
+      logoImg = await loadImage(logoPath);
+    }
+  } catch (e) {
+    console.error('Failed to load logo image:', e.message);
+  }
+
+  if (logoImg) {
+    const logoMaxHeight = 50;
+    const logoScale = logoMaxHeight / logoImg.height;
+    const logoW = logoImg.width * logoScale;
+    const logoH = logoImg.height * logoScale;
+    ctx.drawImage(logoImg, W / 2 - logoW / 2, 10, logoW, logoH);
+  } else {
+    // Draw a neat Vector SRM Logo Placeholder
+    ctx.save();
+    ctx.translate(W / 2, 35);
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fill();
+    ctx.font = '900 13px "Inter", "Arial Black", sans-serif';
+    ctx.fillStyle = '#000000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SRM', 0, 1);
+    ctx.restore();
   }
 
   // 3. HEADER TITLES

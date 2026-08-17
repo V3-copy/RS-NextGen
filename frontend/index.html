@@ -152,26 +152,54 @@
       </section>
 
       <!-- Screen 5: Success & Processing -->
-      <section id="screen-success" class="screen">
-        <div class="glass-panel w-full max-w-md mx-auto text-center flex flex-col items-center">
+      <section id="screen-success" class="screen relative">
+        <!-- Reset Controls Bar -->
+        <div class="absolute top-0 right-0 p-6 z-50">
+          <button id="btn-close-app" class="w-14 h-14 flex items-center justify-center text-white bg-red-500/90 hover:bg-red-600 rounded-full text-2xl font-bold border border-white/20 shadow-2xl transition-all hidden">✕</button>
+        </div>
+
+        <div class="glass-panel w-full max-w-md mx-auto text-center flex flex-col items-center mt-12">
+          
+          <!-- Circular Timer -->
+          <div id="kiosk-timer-circle" class="relative flex items-center justify-center mb-4 hidden mx-auto cursor-pointer hover:scale-105 transition-transform" style="width: 80px; height: 80px;" title="Tap to restart timer">
+            <svg class="w-full h-full transform -rotate-90 drop-shadow-lg" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+              <circle id="timer-progress" cx="50" cy="50" r="45" fill="none" stroke="#3b82f6" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="0" class="transition-all duration-1000 ease-linear"></circle>
+            </svg>
+            <span id="kiosk-timer-text" class="absolute text-white font-bold text-2xl drop-shadow-md">20</span>
+          </div>
           <h2 id="success-title" class="text-3xl font-outfit font-bold mb-4 text-white">Processing...</h2>
           <p id="status-msg" class="text-xl text-blue-400 mb-8 min-h-[30px]">Uploading to server...</p>
           
           <div id="loading-spinner" class="spinner"></div>
           
-          <div id="qr-container" class="hidden flex-col items-center mt-4">
-            <!-- Identity Art above QR -->
-            <div id="identity-art-container" class="hidden flex-col items-center mb-6">
-              <p class="text-white mb-3" style="font-size:0.85rem;letter-spacing:0.06em;opacity:0.6;text-transform:uppercase;">✦ Your Identity Art ✦</p>
-              <div id="identity-art-spinner" class="canvas-spinner mb-2"></div>
-              <img id="identity-art-img" class="identity-art-img hidden" alt="Your identity art" />
-            </div>
-            <!-- QR Code -->
-            <p class="text-white mb-4">Scan to Download Your Badge:</p>
-            <div class="bg-white p-4 rounded-xl shadow-lg">
-              <canvas id="qrcode-canvas"></canvas>
+          <div id="qr-container" class="hidden flex-col items-center mt-4 w-full">
+            <p class="text-white mb-2 font-bold text-xl drop-shadow-md">Scan & Share to Reveal!</p>
+            <p class="text-white/80 mb-6 text-sm drop-shadow-sm">Scan the QR to download your HD badge!</p>
+            
+            <!-- Blurred Preview with QR overlay -->
+            <div id="identity-art-container" class="relative w-full max-w-[280px] rounded-2xl overflow-hidden shadow-2xl border border-white/20 hidden">
+              <div id="identity-art-spinner" class="canvas-spinner my-24 mx-auto"></div>
+              
+              <!-- The blurred canvas image -->
+              <img id="identity-art-img" class="w-full h-auto scale-105 hidden" style="filter: blur(14px) brightness(0.4);" alt="Your identity art" />
+              
+              <!-- QR Code overlaid on top -->
+              <div class="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
+                <div class="bg-white p-3 rounded-xl shadow-[0_0_40px_rgba(255,255,255,0.2)] drop-shadow-2xl">
+                  <canvas id="qrcode-canvas"></canvas>
+                </div>
+                <div class="flex space-x-5 mt-5 justify-center items-center opacity-100 drop-shadow-xl">
+                  <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg" alt="WhatsApp" class="w-7 h-7 invert" />
+                  <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg" alt="Instagram" class="w-7 h-7 invert" />
+                  <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg" alt="LinkedIn" class="w-7 h-7 invert" />
+                  <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/x.svg" alt="X" class="w-7 h-7 invert" />
+                </div>
+              </div>
             </div>
           </div>
+          
+          <p class="text-white/30 text-xs mt-8 mb-4 uppercase tracking-wider font-semibold w-full text-center">Long press anywhere to reset</p>
         </div>
       </section>
       
@@ -182,6 +210,19 @@
       <div class="orb orb-1"></div>
       <div class="orb orb-2"></div>
       <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Scan Prompt Overlay -->
+    <div id="scan-prompt-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] hidden flex-col items-center justify-center transition-all opacity-0">
+      <div class="bg-gray-900 p-8 rounded-2xl border border-white/20 text-center max-w-md w-[90%] shadow-2xl transform scale-95 transition-all">
+        <h3 class="text-3xl text-white font-bold mb-3">Did you scan your badge?</h3>
+        <p class="text-white/70 mb-8 text-lg">Please let us know if you need more time!</p>
+        <div class="flex gap-4 justify-center mb-6">
+          <button id="btn-prompt-yes" class="px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-xl transition-all shadow-lg w-full">Yes, Done!</button>
+          <button id="btn-prompt-no" class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-xl transition-all shadow-lg w-full">No, Need Time</button>
+        </div>
+        <div class="text-white/50 text-sm font-semibold">Resetting automatically in <span id="prompt-timer-text">10</span>s...</div>
+      </div>
     </div>
 
     <script type="module" src="/main.js"></script>
