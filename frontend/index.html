@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>SRM Identity Forger</title>
     <meta name="description" content="Create your SRM Identity">
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
@@ -13,6 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
   </head>
   <body>
     <!-- App Container -->
@@ -111,6 +113,31 @@
         </div>
       </section>
 
+
+      <!-- Screen 3.5: Questions -->
+      <section id="screen-questions" class="screen">
+        <div class="questions-wrapper">
+          <!-- Progress dots -->
+          <div class="progress-dots" id="progress-dots">
+            <span class="dot active" id="dot-0"></span>
+            <span class="dot" id="dot-1"></span>
+            <span class="dot" id="dot-2"></span>
+          </div>
+
+          <!-- Question card -->
+          <div class="question-card" id="question-card">
+            <div class="question-emoji" id="question-emoji">🌟</div>
+            <h2 class="question-text" id="question-text">Loading...</h2>
+            <div class="answer-chips" id="answer-chips">
+              <!-- Chips injected by JS -->
+            </div>
+            <button id="btn-skip-question" class="btn-skip">Skip →</button>
+          </div>
+        </div>
+      </section>
+
+
+
       <!-- Screen 4: Camera -->
       <section id="screen-camera" class="screen">
         <div class="camera-container w-full h-full relative flex items-center justify-center">
@@ -133,6 +160,13 @@
           <div id="loading-spinner" class="spinner"></div>
           
           <div id="qr-container" class="hidden flex-col items-center mt-4">
+            <!-- Identity Art above QR -->
+            <div id="identity-art-container" class="hidden flex-col items-center mb-6">
+              <p class="text-white mb-3" style="font-size:0.85rem;letter-spacing:0.06em;opacity:0.6;text-transform:uppercase;">✦ Your Identity Art ✦</p>
+              <div id="identity-art-spinner" class="canvas-spinner mb-2"></div>
+              <img id="identity-art-img" class="identity-art-img hidden" alt="Your identity art" />
+            </div>
+            <!-- QR Code -->
             <p class="text-white mb-4">Scan to Download Your Badge:</p>
             <div class="bg-white p-4 rounded-xl shadow-lg">
               <canvas id="qrcode-canvas"></canvas>
