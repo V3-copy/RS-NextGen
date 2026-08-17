@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>SRM Identity Forger</title>
+    <meta name="description" content="Create your SRM Identity">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json">
+    <!-- Google Fonts for Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <!-- App Container -->
+    <div id="app" class="app-container">
+      
+      <!-- Screen 0: Kiosk Login -->
+      <section id="screen-login" class="screen active">
+        <div class="glass-panel w-full max-w-md mx-auto text-center">
+          <h2 class="text-3xl font-outfit font-bold mb-6 text-white">Kiosk Authentication</h2>
+          <form id="login-form" class="flex flex-col gap-4">
+            <div class="input-group">
+              <input type="text" id="kiosk-username" placeholder="Username" required autocomplete="off" />
+            </div>
+            <div class="input-group">
+              <input type="password" id="kiosk-password" placeholder="Password" required autocomplete="off" />
+            </div>
+            <p id="login-error" class="text-red-400 mt-2 hidden text-sm">Invalid credentials</p>
+            <button type="submit" id="btn-login" class="btn-primary mt-4">Login</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Screen 1: Welcome -->
+      <section id="screen-welcome" class="screen">
+        <div class="glass-panel text-center">
+          <h1 class="glow-text">Welcome to SRM</h1>
+          <p class="pulse-text mt-4 text-xl">Tap Anywhere to Begin</p>
+        </div>
+      </section>
+
+      <!-- Screen 2: Form -->
+      <section id="screen-form" class="screen">
+        <div class="glass-panel w-full max-w-md mx-auto">
+          <h2 class="text-3xl font-outfit font-bold mb-6 text-white text-center">Your Details</h2>
+          <form id="registration-form" class="flex flex-col gap-4">
+            <div class="input-group">
+              <input type="text" id="name" placeholder="Name" required autocomplete="off" />
+            </div>
+            <div class="input-group">
+              <select id="course" required>
+                <option value="" disabled selected>Select Course</option>
+                <option value="B.Tech Computer Science">B.Tech Computer Science</option>
+                <option value="B.Tech Electronics & Communication">B.Tech Electronics & Communication</option>
+                <option value="B.Tech Mechanical Engineering">B.Tech Mechanical Engineering</option>
+                <option value="B.Tech Civil Engineering">B.Tech Civil Engineering</option>
+                <option value="B.Tech Information Technology">B.Tech Information Technology</option>
+                <option value="B.Tech Biotechnology">B.Tech Biotechnology</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <select id="year" required>
+                <option value="1" selected>1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <input type="tel" id="whatsapp" placeholder="10-Digit WhatsApp Number" required pattern="\d{10}" maxlength="10" autocomplete="off" />
+            </div>
+            <button type="submit" id="btn-next" class="btn-primary mt-4" disabled>Next <span class="arrow">→</span></button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Screen 3: Archetype Selection -->
+      <section id="screen-archetype" class="screen">
+        <div class="glass-panel w-full max-w-4xl mx-auto text-center">
+          <h2 class="text-3xl font-outfit font-bold mb-8 text-white">Select Your Archetype</h2>
+          <div class="grid grid-cols-2 gap-4 md:gap-6">
+            <button class="card archetype-card" data-type="Explorer">
+              <div class="card-content">
+                <h3>Explorer</h3>
+                <p>Discover new frontiers</p>
+              </div>
+            </button>
+            <button class="card archetype-card" data-type="Problem Solver">
+              <div class="card-content">
+                <h3>Problem Solver</h3>
+                <p>Analyze and resolve</p>
+              </div>
+            </button>
+            <button class="card archetype-card" data-type="Innovator">
+              <div class="card-content">
+                <h3>Innovator</h3>
+                <p>Create the future</p>
+              </div>
+            </button>
+            <button class="card archetype-card" data-type="Aspiring Entrepreneur">
+              <div class="card-content">
+                <h3>Aspiring Entrepreneur</h3>
+                <p>Build your empire</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screen 4: Camera -->
+      <section id="screen-camera" class="screen">
+        <div class="camera-container w-full h-full relative flex items-center justify-center">
+          <video id="camera-preview" autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
+          <div class="camera-overlay absolute inset-0 pointer-events-none">
+            <div class="face-guide"></div>
+          </div>
+          <button id="btn-capture" class="btn-capture absolute bottom-12 z-10"></button>
+          <button id="btn-camera-permission" class="btn-primary z-10 hidden">Grant Camera Permission</button>
+          <canvas id="photo-canvas" class="hidden"></canvas>
+        </div>
+      </section>
+
+      <!-- Screen 5: Success & Processing -->
+      <section id="screen-success" class="screen">
+        <div class="glass-panel w-full max-w-md mx-auto text-center flex flex-col items-center">
+          <h2 id="success-title" class="text-3xl font-outfit font-bold mb-4 text-white">Processing...</h2>
+          <p id="status-msg" class="text-xl text-blue-400 mb-8 min-h-[30px]">Uploading to server...</p>
+          
+          <div id="loading-spinner" class="spinner"></div>
+          
+          <div id="qr-container" class="hidden flex-col items-center mt-4">
+            <p class="text-white mb-4">Scan to Download Your Badge:</p>
+            <div class="bg-white p-4 rounded-xl shadow-lg">
+              <canvas id="qrcode-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+    </div>
+
+    <!-- Background Effects -->
+    <div class="bg-effects pointer-events-none">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
