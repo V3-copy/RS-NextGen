@@ -140,10 +140,19 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.shadowBlur = 10;
   ctx.shadowOffsetY = 4;
 
-  // Name
+  // Name (Dynamic Font Size)
   ctx.fillStyle = '#ffffff';
-  ctx.font = '800 100px "Inter", sans-serif';
-  ctx.fillText(titleLine1, W / 2, 110);
+  let nameFontSize = 100;
+  ctx.font = `800 ${nameFontSize}px "Inter", sans-serif`;
+  // Restrict width to avoid overlapping top-left logo and top-right text
+  while (ctx.measureText(titleLine1).width > (W - 450) && nameFontSize > 30) {
+    nameFontSize -= 5;
+    ctx.font = `800 ${nameFontSize}px "Inter", sans-serif`;
+  }
+  ctx.save();
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(titleLine1, W / 2, 210);
+  ctx.restore();
 
   // "- Welcome to -"
   ctx.shadowBlur = 0;
@@ -161,27 +170,18 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  // 4. TOP RIGHT SPONSOR LOGO
+  // 4. TOP RIGHT (EVENT NAME)
+  ctx.save();
   ctx.textAlign = 'right';
-  ctx.font = '900 24px "Inter", sans-serif';
+  ctx.textBaseline = 'top';
   ctx.fillStyle = '#ffffff';
-  const sponsorLines = sponsorName.split('\n');
-  sponsorLines.forEach((line, i) => {
-    ctx.fillText(line, W - 40, 50 + (i * 28));
-  });
-  
-  // Abstract Sponsor Graphic Icon
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.moveTo(W - 190, 50);
-  ctx.lineTo(W - 160, 50);
-  ctx.lineTo(W - 175, 75);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(W - 155, 65);
-  ctx.lineTo(W - 145, 50);
-  ctx.lineTo(W - 135, 95);
-  ctx.fill();
+  ctx.font = '900 28px "Inter", "Arial Black", sans-serif';
+  ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetY = 0;
+  const formattedEventTop = eventName.replace(/\n/g, ' '); 
+  ctx.fillText(formattedEventTop, W - 40, 40);
+  ctx.restore();
 
   // 5. CENTER IMAGE FRAME (Glassmorphic)
   const frameX = 140;
@@ -261,13 +261,7 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.shadowOffsetY = 3;
   ctx.fillStyle = '#ffffff';
 
-  // Left Side: Match Details
-  ctx.textAlign = 'left';
-  ctx.font = '800 32px "Inter", "Arial Black", sans-serif';
-  const matchLines = matchDetails.split('\n');
-  matchLines.forEach((line, i) => {
-    ctx.fillText(line, innerX + 30, innerY + 30 + (i * 38));
-  });
+  // Left Side: Match Details (Moved to top left)
 
   // Right Side: Big Stat Value
   ctx.textAlign = 'right';
@@ -284,17 +278,17 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0; // Turn off shadows for bottom elements
 
-  // 7. BOTTOM LEFT ASSETS
-  // Decorative lines "/////"
-  ctx.fillStyle = '#111111';
-  for (let i = 0; i < 5; i++) {
-    ctx.beginPath();
-    ctx.moveTo(80 + i * 22, 1120);
-    ctx.lineTo(95 + i * 22, 1120);
-    ctx.lineTo(85 + i * 22, 1150);
-    ctx.lineTo(70 + i * 22, 1150);
-    ctx.fill();
-  }
+  // // 7. BOTTOM LEFT ASSETS
+  // // Decorative lines "/////"
+  // ctx.fillStyle = '#111111';
+  // for (let i = 0; i < 5; i++) {
+  //   ctx.beginPath();
+  //   ctx.moveTo(80 + i * 22, 1120);
+  //   ctx.lineTo(95 + i * 22, 1120);
+  //   ctx.lineTo(85 + i * 22, 1150);
+  //   ctx.lineTo(70 + i * 22, 1150);
+  //   ctx.fill();
+  // }
 
   // Footer Message
   ctx.textAlign = 'left';
@@ -305,35 +299,19 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.fillStyle = '#4c1559'; // Deep purple/violet
   ctx.fillRect(70, 1180, 8, footerLines.length * 36);
 
-  ctx.fillStyle = '#181818'; // Dark text
+  ctx.fillStyle = '#ffffff'; // White text
   footerLines.forEach((line, i) => {
     ctx.fillText(line, 95, 1183 + (i * 36));
   });
 
-  // 8. Event Name Block (Bottom Right, below the badge)
-  ctx.textAlign = 'right';
-  ctx.fillStyle = '#5c2a7a'; // Distinct Purple
-  ctx.font = '900 28px "Inter", "Arial Black", sans-serif';
-  // Format as a single line to save vertical space below the badge
-  const formattedEvent = eventName.replace(/\n/g, ' '); 
-  ctx.fillText(formattedEvent, W - 70, 1280);
-
-  // Decorative Crosses "XXXX" (Below the text)
-  ctx.strokeStyle = '#aaaaaa';
-  ctx.lineWidth = 3.5;
-  const startX = W - 220; 
-  const crossY = 1315;
-  for (let i = 0; i < 4; i++) {
-    const cx = startX + (i * 38);
-    ctx.beginPath();
-    ctx.moveTo(cx, crossY);
-    ctx.lineTo(cx + 18, crossY + 18);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx + 18, crossY);
-    ctx.lineTo(cx, crossY + 18);
-    ctx.stroke();
-  }
+  // 8. ARCHETYPE (Bottom Right, below the badge)
+  ctx.textAlign = 'center';
+  ctx.font = '900 36px "Inter", "Arial Black", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetY = 0;
+  ctx.fillText((data.archetype || 'Explorer').toUpperCase(), 940, 1280);
 
   return canvas;
 }

@@ -103,15 +103,15 @@ const APP_VERSION = process.env.APP_VERSION || '1.0.4';
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
-  
+
   // Send current version to the client for auto-updates
   socket.emit('version_check', { version: APP_VERSION });
-  
+
   socket.on('join_room', (roomId) => {
     socket.join(roomId);
     console.log(`Socket ${socket.id} joined room ${roomId}`);
   });
-  
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
@@ -129,11 +129,11 @@ app.post('/api/kiosk/login', (req, res) => {
 
 app.post('/api/register', upload.single('image'), async (req, res) => {
   const { name, course, year, whatsappNumber, email, gender, archetype, answers, kioskToken, kioskId = 'web-kiosk-unknown' } = req.body;
-  
+
   if (kioskToken !== process.env.KIOSK_PASSWORD) {
     return res.status(401).json({ error: 'Unauthorized kiosk' });
   }
-  
+
   if (!name || !whatsappNumber || !req.file) {
     return res.status(400).json({ error: 'Missing required fields or image' });
   }
@@ -141,7 +141,7 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
   let parsedAnswers = [];
   try {
     parsedAnswers = answers ? JSON.parse(answers) : [];
-  } catch(e) {
+  } catch (e) {
     console.error('Error parsing answers:', e);
   }
 
@@ -149,7 +149,7 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
     // Save raw image to MinIO
     const buffer = req.file.buffer;
     const fileName = `raw_${crypto.randomBytes(8).toString('hex')}.jpg`;
-    
+
     await minioClient.putObject(BUCKET_NAME, fileName, buffer, buffer.length, {
       'Content-Type': 'image/jpeg'
     });
@@ -157,10 +157,10 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
     // 1. Save to MongoDB
     const user = new User({ name, course, year, whatsappNumber, email, gender, archetype, answers: parsedAnswers, kioskId, imageUrl: fileName });
     await user.save();
-    
+
     // 2. The roomId for this specific user session
     const roomId = `room_${kioskId}_${user._id}`;
-    
+
     // 3. Add to BullMQ for background processing
     await processQueue.add('compositeAndSend', {
       userId: user._id,
@@ -212,14 +212,14 @@ app.post('/api/generate-canvas', upload.single('image'), async (req, res) => {
   try {
     const { name, year, archetype, answers } = req.body;
     let userImageBuffer = req.file ? req.file.buffer : null;
-    
+
     let parsedAnswers = [];
     try {
       parsedAnswers = answers ? JSON.parse(answers) : [];
-    } catch(e) {}
-    
+    } catch (e) { }
+
     const bodyForCanvas = { name, year, archetype, answers: parsedAnswers };
-    
+
     const canvas = await generateSportsCanvas(bodyForCanvas, userImageBuffer);
     res.json({ success: true, canvasDataUrl: canvas.toDataURL('image/png') });
   } catch (err) {
@@ -240,7 +240,7 @@ if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'producti
         gender: req.query.gender || 'other',
         answers: ['Dummy Answer', 'Dummy Sponsor']
       };
-      
+
       const canvas = await generateSportsCanvas(dummyData, null);
       const buffer = canvas.toBuffer('image/jpeg', { quality: 0.95 });
       res.setHeader('Content-Type', 'image/jpeg');
@@ -262,11 +262,11 @@ app.get('/api/download-raw/:userId', async (req, res) => {
 
     res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    
+
     // Stream directly from MinIO
     const dataStream = await minioClient.getObject(BUCKET_NAME, user.imageUrl);
     dataStream.pipe(res);
-    
+
     dataStream.on('error', (e) => {
       console.error('MinIO stream error:', e);
       if (!res.headersSent) res.status(500).send('Error reading raw image');
@@ -282,7 +282,7 @@ app.get('/api/download/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const cacheKey = `generated_image_${userId}`;
-    
+
     res.setHeader('Content-Disposition', 'attachment; filename="SRM_Identity.jpg"');
     res.setHeader('Content-Type', 'image/jpeg');
 
@@ -293,7 +293,7 @@ app.get('/api/download/:userId', async (req, res) => {
     }
 
     console.log(`[Cache Miss] Generating image for user ${userId}`);
-    
+
     const user = await User.findById(userId);
     if (!user || !user.imageUrl) return res.status(404).send('Not found');
 
@@ -314,7 +314,7 @@ app.get('/api/download/:userId', async (req, res) => {
 
     const canvas = await generateSportsCanvas(user, rawBuffer);
     const finalBuffer = canvas.toBuffer('image/jpeg', { quality: 0.95 });
-    
+
     await redisClient.set(cacheKey, finalBuffer, 'EX', 600); // 10 min cache
     res.send(finalBuffer);
 
