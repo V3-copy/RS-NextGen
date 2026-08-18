@@ -15,7 +15,8 @@ const appSocket = io(BACKEND_URL, {
   reconnection: true,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
-  reconnectionAttempts: Infinity
+  reconnectionAttempts: Infinity,
+  transports: ['websocket']
 });
 
 appSocket.on('connect', () => console.log('Socket connected successfully.'));
@@ -933,7 +934,7 @@ async function submitData() {
 
     const resData = await response.json();
 
-    const socket = io(BACKEND_URL);
+    const socket = io(BACKEND_URL, { transports: ['websocket'] });
 
     socket.on('connect', () => {
       socket.emit('join_room', resData.roomId);
