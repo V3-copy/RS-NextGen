@@ -121,7 +121,7 @@ mongoose.connect(MONGO_URI, mongoOptions)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // --- WEBSOCKETS ---
-const APP_VERSION = process.env.APP_VERSION || '1.1.1';
+const APP_VERSION = process.env.APP_VERSION || '1.1.2';
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
@@ -169,8 +169,7 @@ const verifyAdmin = (req, res, next) => {
 
 async function getMetricsData() {
   const totalUsers = await User.countDocuments();
-  const kiosks = await User.distinct('kioskId');
-  const totalKiosks = kiosks.length;
+  const totalKiosks = io.engine.clientsCount;
   const deptCounts = await User.aggregate([{ $group: { _id: "$course", count: { $sum: 1 } } }]);
   const genderCounts = await User.aggregate([{ $group: { _id: "$gender", count: { $sum: 1 } } }]);
   return { totalUsers, totalKiosks, departments: deptCounts, genders: genderCounts };
