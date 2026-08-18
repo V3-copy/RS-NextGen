@@ -683,6 +683,24 @@ async function initCamera() {
       audio: false 
     });
     video.srcObject = stream;
+    video.onloadedmetadata = () => {
+      let playAttempts = 0;
+      const maxAttempts = 3;
+      const attemptPlay = () => {
+        playAttempts++;
+        video.play().catch(e => {
+          console.warn(`Video playback failed (Attempt ${playAttempts}/${maxAttempts}):`, e);
+          if (playAttempts < maxAttempts) {
+            setTimeout(attemptPlay, 1000); // Retry after 1 second
+          } else {
+            console.error('Video feed failed completely after retries.');
+            btnCameraPermission.innerText = 'Retry Camera Feed';
+            btnCameraPermission.classList.remove('hidden');
+          }
+        });
+      };
+      attemptPlay();
+    };
     resetToCaptureMode();
   } catch (err) {
     console.error('Camera access denied:', err);
