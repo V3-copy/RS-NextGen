@@ -73,6 +73,9 @@ const connection = { host: REDIS_HOST, port: REDIS_PORT, password: REDIS_PASSWOR
 const processQueue = new Queue('imageProcessing', { connection });
 const redisClient = new Redis(connection);
 
+redisClient.on('connect', () => console.log('[Redis] Connected successfully (BullMQ & Cache).'));
+redisClient.on('error', (err) => console.error('[Redis] Connection Error:', err.message));
+
 // --- SOCKET.IO REDIS ADAPTER (for multi-worker sync across PM2 cluster) ---
 const pubClient = new Redis({ ...connection, lazyConnect: true, enableOfflineQueue: false });
 const subClient = pubClient.duplicate();
@@ -99,12 +102,12 @@ async function initMinio() {
     const exists = await minioClient.bucketExists(BUCKET_NAME);
     if (!exists) {
       await minioClient.makeBucket(BUCKET_NAME);
-      console.log(`MinIO bucket '${BUCKET_NAME}' created.`);
+      console.log(`[MinIO] Bucket '${BUCKET_NAME}' created successfully.`);
     } else {
-      console.log(`MinIO bucket '${BUCKET_NAME}' exists.`);
+      console.log(`[MinIO] Bucket '${BUCKET_NAME}' found and ready.`);
     }
   } catch (err) {
-    console.error('Error initializing MinIO:', err);
+    console.error('[MinIO] Initialization Error:', err.message);
   }
 }
 initMinio();
@@ -121,19 +124,19 @@ async function loadDepartments() {
   try {
     const deps = await Department.find();
     cachedDepartments = deps.map(d => d.name);
-    console.log(`Loaded ${cachedDepartments.length} departments.`);
+    console.log(`[Database] Loaded ${cachedDepartments.length} departments into cache.`);
     io.emit('departments_update', cachedDepartments);
   } catch (err) {
-    console.error('Error loading departments:', err);
+    console.error('[Database] Error loading departments:', err.message);
   }
 }
 
 mongoose.connect(MONGO_URI, mongoOptions)
   .then(() => {
-    console.log('MongoDB connected');
+    console.log('[MongoDB] Connected successfully.');
     loadDepartments();
   })
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => console.error('[MongoDB] Connection Error:', err.message));
 
 // --- WEBSOCKETS ---
 const APP_VERSION = process.env.APP_VERSION || '1.1.2';

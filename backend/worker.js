@@ -15,10 +15,15 @@ const mongoOptions = {
 };
 
 mongoose.connect(MONGO_URI, mongoOptions)
-  .then(() => console.log('[Worker] MongoDB connected'))
-  .catch(err => console.error('[Worker] MongoDB connection error:', err));
+  .then(() => console.log('[Worker] [MongoDB] Connected successfully.'))
+  .catch(err => console.error('[Worker] [MongoDB] Connection error:', err.message));
 
 const connection = { host: REDIS_HOST, port: REDIS_PORT, password: REDIS_PASSWORD, db: REDIS_DB };
+
+const IORedis = require('ioredis');
+const redisClient = new IORedis(connection);
+redisClient.on('connect', () => console.log('[Worker] [Redis] Connected successfully.'));
+redisClient.on('error', (err) => console.error('[Worker] [Redis] Connection Error:', err.message));
 
 const worker = new Worker('imageProcessing', async (job) => {
   const { userId, whatsappNumber, roomId } = job.data;
