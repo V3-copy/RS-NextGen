@@ -38,16 +38,6 @@ const REDIS_DB = process.env.REDIS_DB ? parseInt(process.env.REDIS_DB) : 0;
 
 const { createAdapter } = require('@socket.io/redis-adapter');
 
-const pubClient = new Redis({
-  host: REDIS_HOST,
-  port: REDIS_PORT,
-  password: REDIS_PASSWORD,
-  db: REDIS_DB
-});
-const subClient = pubClient.duplicate();
-
-io.adapter(createAdapter(pubClient, subClient));
-
 const minioClient = new MinioClient({
   endPoint: process.env.MINIO_ENDPOINT || '127.0.0.1',
   port: parseInt(process.env.MINIO_PORT || '9000'),
@@ -82,6 +72,19 @@ const Department = mongoose.model('Department', departmentSchema);
 const connection = { host: REDIS_HOST, port: REDIS_PORT, password: REDIS_PASSWORD, db: REDIS_DB };
 const processQueue = new Queue('imageProcessing', { connection });
 const redisClient = new Redis(connection);
+
+// --- SOCKET.IO REDIS ADAPTER (for multi-worker sync across PM2 cluster) ---
+const pubClient = new Redis({ ...connection, lazyConnect: true, enableOfflineQueue: false });
+const subClient = pubClient.duplicate();
+
+Promise.all([pubClient.connect(), subClient.connect()])
+  .then(() => {
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log('[Socket.IO] Redis adapter connected. Multi-worker sync enabled.');
+  })
+  .catch((err) => {
+    console.warn(`[Socket.IO] Redis adapter FAILED (${err.message}). Running in single-instance mode.`);
+  });
 
 const queueEvents = new QueueEvents('imageProcessing', { connection });
 queueEvents.on('progress', ({ jobId, data }) => {

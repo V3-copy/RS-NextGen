@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'srm-api-server',
       script: 'server.js',
-      // Using 2 instances for API Server
+      // 2 instances for concurrency. Redis adapter syncs socket sessions across workers.
       instances: 2, 
       exec_mode: 'cluster', 
       // Restart if memory exceeds 2.5GB per instance
