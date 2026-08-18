@@ -8,8 +8,7 @@ const BACKEND_URL = (import.meta.env && typeof import.meta.env.VITE_BACKEND_URL 
   : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
       ? 'http://localhost:3001' 
       : `http://${window.location.hostname}:3001`);
-
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.4';
 
 // Global Socket for App Updates
 const appSocket = io(BACKEND_URL);
@@ -38,6 +37,8 @@ const state = {
   course: '',
   year: '1',
   whatsappNumber: '',
+  email: '',
+  gender: '',
   archetype: '',
   answers: [],      // collected keyword answers from questions
   imageBlob: null
@@ -48,6 +49,7 @@ const screens = {
   login:     document.getElementById('screen-login'),
   welcome:   document.getElementById('screen-welcome'),
   form:      document.getElementById('screen-form'),
+  gender:    document.getElementById('screen-gender'),
   archetype: document.getElementById('screen-archetype'),
   questions: document.getElementById('screen-questions'),
   camera:    document.getElementById('screen-camera'),
@@ -68,7 +70,11 @@ const inputName     = document.getElementById('name');
 const inputCourse   = document.getElementById('course');
 const inputYear     = document.getElementById('year');
 const inputWhatsApp = document.getElementById('whatsapp');
+const inputEmail    = document.getElementById('email');
 const btnNext       = document.getElementById('btn-next');
+
+// Gender
+const genderCards = document.querySelectorAll('.gender-card');
 
 // Archetype
 const archetypeCards = document.querySelectorAll('.archetype-card');
@@ -470,10 +476,19 @@ if (form) {
       state.course         = inputCourse.value;
       state.year           = inputYear.value;
       state.whatsappNumber = inputWhatsApp.value.replace(/\D/g, '');
-      switchScreen('archetype');
+      state.email          = inputEmail ? inputEmail.value.trim() : '';
+      switchScreen('gender');
     }
   });
 }
+
+// ─── GENDER ───────────────────────────────────────────────────────────────────
+genderCards.forEach(card => {
+  card.addEventListener('click', () => {
+    state.gender = card.dataset.gender;
+    switchScreen('archetype');
+  });
+});
 
 // ─── ARCHETYPE ────────────────────────────────────────────────────────────────
 archetypeCards.forEach(card => {
@@ -746,6 +761,8 @@ async function submitData() {
     formData.append('course', state.course);
     formData.append('year', state.year);
     formData.append('whatsappNumber', state.whatsappNumber);
+    formData.append('email', state.email);
+    formData.append('gender', state.gender);
     formData.append('archetype', state.archetype);
     formData.append('answers', JSON.stringify(state.answers));
     formData.append('kioskId', KIOSK_ID);

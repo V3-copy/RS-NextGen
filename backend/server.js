@@ -50,6 +50,8 @@ const userSchema = new mongoose.Schema({
   course: String,
   year: String,
   whatsappNumber: String,
+  email: String,
+  gender: String,
   archetype: String,
   answers: [String],
   kioskId: String,
@@ -126,7 +128,7 @@ app.post('/api/kiosk/login', (req, res) => {
 });
 
 app.post('/api/register', upload.single('image'), async (req, res) => {
-  const { name, course, year, whatsappNumber, archetype, answers, kioskId, kioskToken } = req.body;
+  const { name, course, year, whatsappNumber, email, gender, archetype, answers, kioskToken, kioskId = 'web-kiosk-unknown' } = req.body;
   
   if (kioskToken !== process.env.KIOSK_PASSWORD) {
     return res.status(401).json({ error: 'Unauthorized kiosk' });
@@ -153,7 +155,7 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
     });
 
     // 1. Save to MongoDB
-    const user = new User({ name, course, year, whatsappNumber, archetype, answers: parsedAnswers, kioskId, imageUrl: fileName });
+    const user = new User({ name, course, year, whatsappNumber, email, gender, archetype, answers: parsedAnswers, kioskId, imageUrl: fileName });
     await user.save();
     
     // 2. The roomId for this specific user session
@@ -235,6 +237,7 @@ if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'producti
         course: req.query.course || 'B.Tech Computer Science',
         year: req.query.year || '1',
         archetype: req.query.archetype || 'Innovator',
+        gender: req.query.gender || 'other',
         answers: ['Dummy Answer', 'Dummy Sponsor']
       };
       

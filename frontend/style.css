@@ -358,6 +358,125 @@ h1, h2, h3 {
   transform: translateX(4px);
 }
 
+/* Gender Cards */
+.gender-cards-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.gender-card {
+  flex: 1;
+  padding: 24px 16px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.gender-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px auto;
+  transition: all 0.3s ease;
+}
+
+.gender-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.gender-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  transition: color 0.3s ease;
+}
+
+/* Male */
+.gender-male {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(30, 58, 138, 0.2);
+}
+.gender-male .gender-icon-wrapper {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.2);
+}
+.gender-male .gender-title { color: #dbeafe; }
+.gender-male:hover {
+  background: rgba(30, 58, 138, 0.4);
+  border-color: #60a5fa;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+.gender-male:hover .gender-icon-wrapper {
+  background: rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+  transform: scale(1.1);
+}
+.gender-male:hover .gender-title { color: #ffffff; }
+
+/* Female */
+.gender-female {
+  border-color: rgba(236, 72, 153, 0.3);
+  background: rgba(131, 24, 67, 0.2);
+}
+.gender-female .gender-icon-wrapper {
+  background: rgba(236, 72, 153, 0.2);
+  color: #f472b6;
+  box-shadow: inset 0 0 10px rgba(236, 72, 153, 0.2);
+}
+.gender-female .gender-title { color: #fce7f3; }
+.gender-female:hover {
+  background: rgba(131, 24, 67, 0.4);
+  border-color: #f472b6;
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
+}
+.gender-female:hover .gender-icon-wrapper {
+  background: rgba(236, 72, 153, 0.4);
+  color: #f9a8d4;
+  transform: scale(1.1);
+}
+.gender-female:hover .gender-title { color: #ffffff; }
+
+/* Other */
+.gender-other {
+  border-color: rgba(168, 85, 247, 0.3);
+  background: rgba(88, 28, 135, 0.2);
+}
+.gender-other .gender-icon-wrapper {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  box-shadow: inset 0 0 10px rgba(168, 85, 247, 0.2);
+}
+.gender-other .gender-title { color: #f3e8ff; }
+.gender-other:hover {
+  background: rgba(88, 28, 135, 0.4);
+  border-color: #c084fc;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+.gender-other:hover .gender-icon-wrapper {
+  background: linear-gradient(to right, #ef4444, #10b981, #a855f7);
+  color: #ffffff;
+  transform: scale(1.1);
+}
+.gender-other:hover .gender-title { color: #ffffff; }
+
+@media (max-width: 768px) {
+  .gender-cards-container {
+    flex-direction: column;
+  }
+}
+
 /* Archetype Cards */
 .card {
   background: rgba(26, 27, 38, 0.6);
@@ -831,3 +950,122 @@ h1, h2, h3 {
   0% { transform: translateY(0); }
   100% { transform: translateY(-50%); }
 }
+
+/* Custom Overlays */
+.overlay-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.overlay-container.z-300 {
+  z-index: 300;
+}
+
+.overlay-modal {
+  background-color: #111827;
+  padding: 32px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+  max-width: 28rem;
+  width: 90%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  transform: scale(1);
+  transition: all 0.3s ease;
+}
+
+.overlay-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.75rem;
+}
+
+.overlay-text {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.125rem;
+  margin-bottom: 2rem;
+}
+
+.overlay-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.overlay-btn {
+  padding: 12px 32px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  width: 100%;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  border: none;
+}
+
+.overlay-btn-yes {
+  background-color: #22c55e;
+  color: white;
+}
+.overlay-btn-yes:hover { background-color: #16a34a; }
+
+.overlay-btn-no {
+  background-color: #ef4444;
+  color: white;
+}
+.overlay-btn-no:hover { background-color: #dc2626; }
+
+.overlay-timer {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pwa-prompt-container {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  background-color: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  color: white;
+  transform: translateY(100%);
+  transition: all 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  .pwa-prompt-container {
+    left: auto;
+    right: 16px;
+    width: 24rem;
+  }
+}
+
+.opacity-0 { opacity: 0 !important; }
+.scale-95 { transform: scale(0.95) !important; }
+.scale-100 { transform: scale(1) !important; }
+.translate-y-full { transform: translateY(100%) !important; }

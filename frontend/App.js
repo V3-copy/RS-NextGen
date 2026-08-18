@@ -169,7 +169,7 @@ export default function App() {
 
       {screen === 'ARCHETYPE' && (
         <View style={styles.contentContainer}>
-          <Text style={styles.title}>Select Your Archetype</Text>
+          <Text style={styles.title}>Select Your Type</Text>
           <View style={styles.grid}>
             {['Explorer', 'Problem Solver', 'Innovator', 'Aspiring Entrepreneur'].map((type) => (
               <TouchableOpacity key={type} style={styles.card} onPress={() => { setArchetype(type); setScreen('CAMERA'); }}>

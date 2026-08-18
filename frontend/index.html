@@ -102,15 +102,52 @@
             <div class="input-group">
               <input type="tel" id="whatsapp" placeholder="10-Digit WhatsApp Number" required pattern="\d{10}" maxlength="10" autocomplete="off" />
             </div>
+            <div class="input-group">
+              <input type="email" id="email" placeholder="Email Address (Optional)" autocomplete="off" />
+            </div>
             <button type="submit" id="btn-next" class="btn-primary mt-4" disabled>Next <span class="arrow">→</span></button>
           </form>
+        </div>
+      </section>
+
+      <!-- Screen 2.5: Gender Selection -->
+      <section id="screen-gender" class="screen">
+        <div class="glass-panel w-full max-w-4xl mx-auto text-center">
+          <h2 class="text-3xl font-outfit font-bold mb-8 text-white">Select Your Gender</h2>
+          <div class="gender-cards-container">
+            <button class="card gender-card gender-male" data-gender="Male">
+              <div class="gender-icon-wrapper">
+                <!-- Male Mars Symbol -->
+                <svg class="gender-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="10" cy="14" r="5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></circle>
+                  <line x1="13.5" y1="10.5" x2="21" y2="3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></line>
+                  <polyline points="16 3 21 3 21 8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                </svg>
+              </div>
+              <h3 class="gender-title">Male</h3>
+            </button>
+            <button class="card gender-card gender-female" data-gender="Female">
+              <div class="gender-icon-wrapper">
+                <!-- Female Venus Symbol -->
+                <svg class="gender-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14a6 6 0 100-12 6 6 0 000 12zm0 0v10m-4-4h8"></path></svg>
+              </div>
+              <h3 class="gender-title">Female</h3>
+            </button>
+            <button class="card gender-card gender-other" data-gender="Other">
+              <div class="gender-icon-wrapper">
+                <!-- Inclusive/Rainbow Symbol (Star/Sparkle) -->
+                <svg class="gender-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+              </div>
+              <h3 class="gender-title">Other</h3>
+            </button>
+          </div>
         </div>
       </section>
 
       <!-- Screen 3: Archetype Selection -->
       <section id="screen-archetype" class="screen">
         <div class="glass-panel w-full max-w-4xl mx-auto text-center">
-          <h2 class="text-3xl font-outfit font-bold mb-8 text-white">Select Your Archetype</h2>
+          <h2 class="text-3xl font-outfit font-bold mb-8 text-white">Select Your Type</h2>
           <div class="grid grid-cols-2 gap-4 md:gap-6">
             <button class="card archetype-card" data-type="Explorer">
               <div class="card-content">
@@ -240,15 +277,15 @@
     </div>
 
     <!-- Scan Prompt Overlay -->
-    <div id="scan-prompt-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] hidden flex-col items-center justify-center transition-all opacity-0">
-      <div class="bg-gray-900 p-8 rounded-2xl border border-white/20 text-center max-w-md w-[90%] shadow-2xl transform scale-95 transition-all">
-        <h3 class="text-3xl text-white font-bold mb-3">Did you scan your badge?</h3>
-        <p class="text-white/70 mb-8 text-lg">Please let us know if you need more time!</p>
-        <div class="flex gap-4 justify-center mb-6">
-          <button id="btn-prompt-yes" class="px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-xl transition-all shadow-lg w-full">Yes, Done!</button>
-          <button id="btn-prompt-no" class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-xl transition-all shadow-lg w-full">No, Need Time</button>
+    <div id="scan-prompt-overlay" class="overlay-container hidden opacity-0">
+      <div class="overlay-modal scale-95">
+        <h3 class="overlay-title">Did you scan your badge?</h3>
+        <p class="overlay-text">Please let us know if you need more time!</p>
+        <div class="overlay-buttons">
+          <button id="btn-prompt-yes" class="overlay-btn overlay-btn-yes">Yes, Done!</button>
+          <button id="btn-prompt-no" class="overlay-btn overlay-btn-no">No, Need Time</button>
         </div>
-        <div class="text-white/50 text-sm font-semibold">Resetting automatically in <span id="prompt-timer-text">10</span>s...</div>
+        <div class="overlay-timer">Resetting automatically in <span id="prompt-timer-text">10</span>s...</div>
       </div>
     </div>
 
@@ -264,12 +301,12 @@
     </div>
 
     <!-- Update Prompt Overlay -->
-    <div id="update-prompt-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[300] hidden flex-col items-center justify-center transition-all opacity-0">
-      <div class="bg-gray-900 p-8 rounded-2xl border border-[var(--color-srm-yellow)]/50 text-center max-w-md w-[90%] shadow-2xl transform scale-95 transition-all">
-        <div class="text-5xl mb-4">🚀</div>
-        <h3 class="text-2xl text-white font-bold mb-3">Update Available</h3>
-        <p class="text-white/70 mb-8">A new version of the application has been released. Please reload to apply updates.</p>
-        <button id="btn-reload-app" class="px-8 py-3 bg-[var(--color-srm-yellow)] hover:bg-yellow-500 text-black rounded-xl font-bold text-xl transition-all shadow-lg w-full">Reload Now</button>
+    <div id="update-prompt-overlay" class="overlay-container z-300 hidden opacity-0">
+      <div class="overlay-modal scale-95" style="border-color: rgba(243, 186, 47, 0.5);">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🚀</div>
+        <h3 class="overlay-title">Update Available</h3>
+        <p class="overlay-text">A new version of the application has been released. Please reload to apply updates.</p>
+        <button id="btn-reload-app" class="overlay-btn" style="background: var(--color-srm-yellow); color: black;">Reload Now</button>
       </div>
     </div>
 

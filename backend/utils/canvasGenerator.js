@@ -32,7 +32,7 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   // Fallback defaults for dynamic data mapped to DB user object
   const titleLine1 = data.name || 'Student Name';
   const titleLine2 = '- Welcome to -';
-  const titleLine3 = 'R Sivakumar Foundation';
+  const titleLine3 = 'R Shivakumar Foundation';
   
   const matchDetails = `ARCHETYPE\n${(data.archetype || 'Explorer').toUpperCase()}`;
   
@@ -54,12 +54,26 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
     sponsorName = parts.length > 1 ? `${parts[0]}\n${parts[1]}` : safeAnswers[1].toUpperCase();
   }
 
-  // 1. BACKGROUND (Stadium Sky Gradient)
+  // 1. BACKGROUND (Gender-based Gradient)
+  const userGender = data.gender ? data.gender.toLowerCase() : 'other';
   const bgGradient = ctx.createLinearGradient(0, 0, 0, H);
-  bgGradient.addColorStop(0, '#32527b');   // Deep sky blue at top
-  bgGradient.addColorStop(0.4, '#7694b6'); // Mid slate blue
-  bgGradient.addColorStop(0.8, '#d0d8e2'); // Pale grayish-blue
-  bgGradient.addColorStop(1, '#e8ebef');   // Off-white bottom
+  
+  if (userGender === 'male') {
+    // Dark with blue for males
+    bgGradient.addColorStop(0, '#020617');
+    bgGradient.addColorStop(0.5, '#1e3a8a');
+    bgGradient.addColorStop(1, '#0f172a');
+  } else if (userGender === 'female') {
+    // Pink with dark for females
+    bgGradient.addColorStop(0, '#2e1026');
+    bgGradient.addColorStop(0.5, '#831843');
+    bgGradient.addColorStop(1, '#2e1026');
+  } else {
+    // Dark + random color accents (Purple/Teal) for others
+    bgGradient.addColorStop(0, '#171717');
+    bgGradient.addColorStop(0.5, '#4c1d95');
+    bgGradient.addColorStop(1, '#0f766e');
+  }
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, W, H);
 
@@ -96,11 +110,17 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   }
 
   if (logoImg) {
-    const logoMaxHeight = 80;
+    const logoMaxHeight = 120; // Larger logo
     const logoScale = logoMaxHeight / logoImg.height;
     const logoW = logoImg.width * logoScale;
     const logoH = logoImg.height * logoScale;
+    
+    ctx.save();
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.6)'; // Contrast glow
+    ctx.shadowBlur = 25;
+    ctx.shadowOffsetY = 5;
     ctx.drawImage(logoImg, 40, 40, logoW, logoH);
+    ctx.restore();
   }
 
   let badgeImg = null;
@@ -131,7 +151,7 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.font = '700 45px "Inter", sans-serif';
   ctx.fillText(titleLine2, W / 2, 230);
 
-  // "R Sivakumar Foundation"
+  // "R Shivakumar Foundation"
   ctx.shadowBlur = 10;
   ctx.shadowOffsetY = 4;
   ctx.font = '900 65px "Inter", "Arial Black", sans-serif';
@@ -163,29 +183,33 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.lineTo(W - 135, 95);
   ctx.fill();
 
-  // 5. CENTER IMAGE FRAME
-  const frameX = 180;
+  // 5. CENTER IMAGE FRAME (Glassmorphic)
+  const frameX = 140;
   const frameY = 400;
-  const frameW = 720;
+  const frameW = 800;
   const frameH = 750;
-  const frameR = 30;
+  const frameR = 40;
 
-  // Draw thick white border/shadow base
+  // Draw Glassmorphic border/shadow base
   ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
   ctx.shadowBlur = 35;
   ctx.shadowOffsetY = 15;
   roundRect(ctx, frameX, frameY, frameW, frameH, frameR);
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // Glass fill
   ctx.fill();
+  
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; // Glass border
+  ctx.stroke();
   ctx.restore();
 
   // Create Inner clipping area for Image
-  const innerX = frameX + 15;
-  const innerY = frameY + 15;
-  const innerW = frameW - 30;
-  const innerH = frameH - 30;
-  const innerR = frameR - 8;
+  const innerX = frameX + 2;
+  const innerY = frameY + 2;
+  const innerW = frameW - 4;
+  const innerH = frameH - 4;
+  const innerR = frameR - 2;
 
   ctx.save();
   roundRect(ctx, innerX, innerY, innerW, innerH, innerR);
@@ -193,8 +217,8 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
 
   // Inner background gradient (Visible if image is a transparent cutout)
   const innerGrad = ctx.createLinearGradient(innerX, innerY, innerX, innerY + innerH);
-  innerGrad.addColorStop(0, '#7588a4'); 
-  innerGrad.addColorStop(1, '#aebbd1');
+  innerGrad.addColorStop(0, 'rgba(255, 255, 255, 0.2)'); 
+  innerGrad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
   ctx.fillStyle = innerGrad;
   ctx.fillRect(innerX, innerY, innerW, innerH);
 
@@ -216,22 +240,18 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
 
   // Draw Badge overlapping the bottom right of the frame
   if (badgeImg) {
-    const badgeScale = 220 / badgeImg.width; // 220px width
+    const badgeScale = 320 / badgeImg.width; // Larger badge
     const badgeW = badgeImg.width * badgeScale;
     const badgeH = badgeImg.height * badgeScale;
     const badgeX = innerX + innerW - badgeW / 2; // overlapping right edge
     const badgeY = innerY + innerH - badgeH / 2 - 20; // overlapping bottom edge
     
-    // Draw white background circle behind the badge to prevent bleed-through
     ctx.save();
-    ctx.beginPath();
-    // Circle centered at the badge, radius slightly smaller than half width to hide edges
-    ctx.arc(badgeX + badgeW / 2, badgeY + badgeH / 2 - 10, badgeW / 2 - 8, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-    ctx.restore();
-
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 25;
+    ctx.shadowOffsetY = 10;
     ctx.drawImage(badgeImg, badgeX, badgeY, badgeW, badgeH);
+    ctx.restore();
   }
 
   // 6. INNER FRAME TEXT & STATS (Drawn over the image)
@@ -290,21 +310,19 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
     ctx.fillText(line, 95, 1183 + (i * 36));
   });
 
-  // 8. BOTTOM RIGHT ASSETS
-  // Event Name Block
+  // 8. Event Name Block (Bottom Right, below the badge)
   ctx.textAlign = 'right';
   ctx.fillStyle = '#5c2a7a'; // Distinct Purple
-  ctx.font = '900 38px "Inter", "Arial Black", sans-serif';
-  const eventLines = eventName.split('\n');
-  eventLines.forEach((line, i) => {
-    ctx.fillText(line, W - 70, 1120 + (i * 42));
-  });
+  ctx.font = '900 28px "Inter", "Arial Black", sans-serif';
+  // Format as a single line to save vertical space below the badge
+  const formattedEvent = eventName.replace(/\n/g, ' '); 
+  ctx.fillText(formattedEvent, W - 70, 1280);
 
-  // Decorative Crosses "XXXX"
+  // Decorative Crosses "XXXX" (Below the text)
   ctx.strokeStyle = '#aaaaaa';
   ctx.lineWidth = 3.5;
   const startX = W - 220; 
-  const crossY = 1300;
+  const crossY = 1315;
   for (let i = 0; i < 4; i++) {
     const cx = startX + (i * 38);
     ctx.beginPath();
