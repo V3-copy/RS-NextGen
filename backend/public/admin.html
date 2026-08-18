@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .nav-btn { @apply px-4 py-2 font-medium rounded-md transition-colors; }
+    .nav-btn.active { @apply bg-blue-600 text-white; }
+    .nav-btn:not(.active) { @apply text-gray-600 hover:bg-gray-200; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col hidden" id="app-body">
+  <header class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+      <h1 class="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+      <nav class="flex gap-2">
+        <button class="nav-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+        <button class="nav-btn" onclick="switchTab('users')">Users</button>
+        <button class="nav-btn" onclick="switchTab('departments')">Departments</button>
+        <button class="nav-btn" onclick="switchTab('data')">Data Mgmt</button>
+        <button class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md font-medium ml-4 transition-colors border border-transparent hover:border-red-200" onclick="logout()">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    
+    <!-- DASHBOARD TAB -->
+    <div id="tab-dashboard" class="tab-content active">
+      <h2 class="text-2xl font-bold mb-6">Metrics Overview <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded ml-2 animate-pulse">Live</span></h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+          <span class="text-gray-500 font-medium">Total Users</span>
+          <span id="metric-total-users" class="text-5xl font-black text-blue-600 mt-2">0</span>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+          <span class="text-gray-500 font-medium">Active Kiosks</span>
+          <span id="metric-total-kiosks" class="text-5xl font-black text-indigo-600 mt-2">0</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">By Department</h3>
+          <ul id="metric-dept-list" class="space-y-2"></ul>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">By Gender</h3>
+          <ul id="metric-gender-list" class="space-y-2"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS TAB -->
+    <div id="tab-users" class="tab-content">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h2 class="text-2xl font-bold">User Directory</h2>
+        
+        <div class="flex flex-wrap gap-3">
+          <select id="filter-dept" class="border rounded-md px-3 py-2 bg-white shadow-sm text-sm" onchange="fetchUsers(1)">
+            <option value="">All Departments</option>
+            <!-- Filled dynamically -->
+          </select>
+          <select id="filter-gender" class="border rounded-md px-3 py-2 bg-white shadow-sm text-sm" onchange="fetchUsers(1)">
+            <option value="">All Genders</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+          <select id="user-sort" class="border rounded-md px-3 py-2 bg-white shadow-sm text-sm" onchange="fetchUsers(1)">
+            <option value="-createdAt">Newest First</option>
+            <option value="createdAt">Oldest First</option>
+            <option value="course">Department (A-Z)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-50 text-gray-600 text-sm border-b">
+              <th class="p-4 font-medium">Photo</th>
+              <th class="p-4 font-medium">Name</th>
+              <th class="p-4 font-medium">Course</th>
+              <th class="p-4 font-medium">Gender</th>
+              <th class="p-4 font-medium">Date</th>
+              <th class="p-4 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="user-table-body" class="divide-y text-sm">
+            <tr><td colspan="6" class="p-4 text-center text-gray-500">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex justify-between items-center mt-4">
+        <span id="user-pagination-info" class="text-gray-600 text-sm"></span>
+        <div class="flex gap-2">
+          <button id="btn-prev-page" class="px-4 py-2 border rounded bg-white hover:bg-gray-50 disabled:opacity-50">Previous</button>
+          <button id="btn-next-page" class="px-4 py-2 border rounded bg-white hover:bg-gray-50 disabled:opacity-50">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEPARTMENTS TAB -->
+    <div id="tab-departments" class="tab-content">
+      <div class="max-w-2xl bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h2 class="text-2xl font-bold mb-6">Manage Departments</h2>
+        
+        <div class="flex gap-2 mb-6">
+          <input type="text" id="new-dept" placeholder="New Department Name" class="border p-2 flex-grow rounded outline-none focus:ring-2 focus:ring-blue-500" />
+          <button id="add-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add</button>
+        </div>
+
+        <ul id="dept-list" class="mb-6 border rounded divide-y max-h-96 overflow-y-auto"></ul>
+
+        <button id="update-btn" class="w-full bg-emerald-500 text-white font-bold py-3 rounded hover:bg-emerald-600 transition-colors">
+          Update All Kiosks
+        </button>
+        <p id="status-msg" class="text-center text-sm mt-3 text-gray-600 font-medium"></p>
+      </div>
+    </div>
+
+    <!-- DATA TAB -->
+    <div id="tab-data" class="tab-content">
+      <h2 class="text-2xl font-bold mb-6">Data Management</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
+          <div>
+            <h3 class="font-bold text-lg mb-2">Export Data</h3>
+            <p class="text-gray-600 text-sm mb-6">Download a complete ZIP archive containing a CSV of all user details and raw high-resolution images collected.</p>
+          </div>
+          <button onclick="downloadBackup()" class="bg-blue-600 text-white px-6 py-3 rounded-md font-bold hover:bg-blue-700 text-center">
+            Download ZIP Backup
+          </button>
+        </div>
+
+        <div class="bg-red-50 p-6 rounded-xl shadow-sm border border-red-100 flex flex-col justify-between">
+          <div>
+            <h3 class="font-bold text-lg mb-2 text-red-800">Danger Zone</h3>
+            <p class="text-red-600 text-sm mb-6">Permanently delete all user records from the database. Make sure you download a backup first! This action cannot be undone.</p>
+          </div>
+          <button onclick="resetDatabase()" class="bg-red-600 text-white px-6 py-3 rounded-md font-bold hover:bg-red-700 text-center">
+            Reset Database
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- BADGE MODAL -->
+  <div id="badge-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl overflow-hidden max-w-3xl w-full flex flex-col">
+      <div class="px-6 py-4 border-b flex justify-between items-center">
+        <h3 class="font-bold text-lg">Preview Generated Badge</h3>
+        <button onclick="closeBadgeModal()" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="p-6 flex justify-center bg-gray-100 min-h-[400px]">
+        <img id="badge-img" class="max-h-[70vh] shadow-lg hidden" />
+        <div id="badge-loading" class="text-gray-500 flex flex-col items-center justify-center">
+          <svg class="animate-spin h-8 w-8 text-blue-600 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          Generating Preview...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- AUTH & FETCH WRAPPER ---
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      window.location.href = '/admin-login';
+    } else {
+      document.getElementById('app-body').classList.remove('hidden');
+    }
+
+    function logout() {
+      localStorage.removeItem('adminToken');
+      window.location.href = '/admin-login';
+    }
+
+    async function authFetch(url, options = {}) {
+      if (!options.headers) options.headers = {};
+      options.headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(url, options);
+      if (res.status === 401 || res.status === 403) logout();
+      return res;
+    }
+
+    // --- SOCKET.IO ---
+    const socket = io();
+    socket.on('metrics_update', (data) => {
+      renderMetrics(data);
+    });
+
+    // --- NAVIGATION ---
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById('tab-' + tabId).classList.add('active');
+      document.querySelector(`button[onclick="switchTab('${tabId}')"]`).classList.add('active');
+
+      if (tabId === 'dashboard') fetchMetrics();
+      if (tabId === 'users') fetchUsers(1);
+      if (tabId === 'departments') fetchDepartments();
+    }
+
+    // --- DASHBOARD METRICS ---
+    async function fetchMetrics() {
+      try {
+        const res = await authFetch('/api/admin/metrics');
+        const data = await res.json();
+        if (data.success) renderMetrics(data);
+      } catch (err) { console.error('Failed to load metrics:', err); }
+    }
+
+    function renderMetrics(data) {
+      document.getElementById('metric-total-users').textContent = data.totalUsers;
+      document.getElementById('metric-total-kiosks').textContent = data.totalKiosks;
+
+      const deptList = document.getElementById('metric-dept-list');
+      deptList.innerHTML = '';
+      data.departments.sort((a,b) => b.count - a.count).forEach(d => {
+        deptList.innerHTML += `<li class="flex justify-between items-center py-1"><span class="text-gray-700">${d._id || 'Unknown'}</span><span class="bg-blue-100 text-blue-800 font-bold px-2 py-1 rounded text-xs">${d.count}</span></li>`;
+      });
+
+      const genderList = document.getElementById('metric-gender-list');
+      genderList.innerHTML = '';
+      data.genders.sort((a,b) => b.count - a.count).forEach(g => {
+        genderList.innerHTML += `<li class="flex justify-between items-center py-1"><span class="text-gray-700">${g._id || 'Unknown'}</span><span class="bg-purple-100 text-purple-800 font-bold px-2 py-1 rounded text-xs">${g.count}</span></li>`;
+      });
+    }
+
+    // --- USERS TABLE ---
+    let currentPage = 1;
+    async function fetchUsers(page) {
+      currentPage = page;
+      const sortBy = document.getElementById('user-sort').value;
+      const deptFilter = document.getElementById('filter-dept').value;
+      const genderFilter = document.getElementById('filter-gender').value;
+      
+      const tbody = document.getElementById('user-table-body');
+      tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">Loading...</td></tr>';
+      
+      try {
+        let url = `/api/admin/users?page=${page}&limit=20&sortBy=${sortBy}`;
+        if (deptFilter) url += `&department=${encodeURIComponent(deptFilter)}`;
+        if (genderFilter) url += `&gender=${encodeURIComponent(genderFilter)}`;
+
+        const res = await authFetch(url);
+        const data = await res.json();
+        
+        if (data.success) {
+          tbody.innerHTML = '';
+          if (data.users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">No users found.</td></tr>';
+          }
+          
+          data.users.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50';
+            const dateStr = new Date(u.createdAt).toLocaleString();
+            const imgSrc = u.imageUrl ? `/api/download-raw/${u._id}` : 'https://via.placeholder.com/40';
+            
+            const badgeBtnHTML = u.imageUrl 
+              ? `<button onclick="openBadgeModal('${u._id}')" class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded text-xs font-medium transition-colors">View Badge</button>` 
+              : `<span class="text-gray-400 text-xs">No Photo</span>`;
+
+            tr.innerHTML = `
+              <td class="p-4"><img src="${imgSrc}" class="w-10 h-10 rounded-full object-cover border border-gray-200" /></td>
+              <td class="p-4 font-medium text-gray-900">${u.name}</td>
+              <td class="p-4 text-gray-600">${u.course}</td>
+              <td class="p-4 text-gray-600">${u.gender}</td>
+              <td class="p-4 text-gray-500 text-xs">${dateStr}</td>
+              <td class="p-4 text-right">${badgeBtnHTML}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          document.getElementById('user-pagination-info').textContent = `Page ${data.page} of ${data.pages || 1} (${data.total} total)`;
+          document.getElementById('btn-prev-page').disabled = (data.page <= 1);
+          document.getElementById('btn-next-page').disabled = (data.page >= data.pages);
+        }
+      } catch (err) { console.error('Failed to load users:', err); }
+    }
+
+    document.getElementById('btn-prev-page').onclick = () => fetchUsers(currentPage - 1);
+    document.getElementById('btn-next-page').onclick = () => fetchUsers(currentPage + 1);
+
+    // --- BADGE MODAL ---
+    function openBadgeModal(userId) {
+      document.getElementById('badge-modal').classList.remove('hidden');
+      const img = document.getElementById('badge-img');
+      const loader = document.getElementById('badge-loading');
+      img.classList.add('hidden');
+      loader.classList.remove('hidden');
+      
+      // We must fetch it with Auth header to pass verifyAdmin, then create Object URL
+      authFetch(`/api/admin/preview-badge/${userId}`)
+        .then(res => res.blob())
+        .then(blob => {
+          img.src = URL.createObjectURL(blob);
+          loader.classList.add('hidden');
+          img.classList.remove('hidden');
+        })
+        .catch(e => {
+          loader.innerHTML = '<span class="text-red-500">Failed to load preview.</span>';
+        });
+    }
+
+    function closeBadgeModal() {
+      document.getElementById('badge-modal').classList.add('hidden');
+      document.getElementById('badge-img').src = '';
+    }
+
+    // --- DEPARTMENTS ---
+    let departments = [];
+    async function fetchDepartments() {
+      try {
+        const res = await authFetch('/api/departments');
+        const data = await res.json();
+        if (data.success) {
+          departments = data.departments || [];
+          renderDeptList();
+          populateDeptFilter();
+        }
+      } catch (e) { console.error('Failed to fetch departments:', e); }
+    }
+
+    function renderDeptList() {
+      const listEl = document.getElementById('dept-list');
+      listEl.innerHTML = '';
+      if (departments.length === 0) {
+        listEl.innerHTML = '<li class="p-3 text-gray-500 text-center">No departments found.</li>';
+        return;
+      }
+      departments.forEach((dept, index) => {
+        const li = document.createElement('li');
+        li.className = 'flex justify-between items-center p-3 hover:bg-gray-50';
+        li.innerHTML = `<span>${dept}</span><button class="text-red-500 hover:text-red-700 text-sm font-medium" onclick="removeDept(${index})">Remove</button>`;
+        listEl.appendChild(li);
+      });
+    }
+
+    function populateDeptFilter() {
+      const select = document.getElementById('filter-dept');
+      const currentVal = select.value;
+      select.innerHTML = '<option value="">All Departments</option>';
+      departments.forEach(dept => {
+        const opt = document.createElement('option');
+        opt.value = dept;
+        opt.textContent = dept;
+        select.appendChild(opt);
+      });
+      select.value = currentVal;
+    }
+
+    function removeDept(index) {
+      departments.splice(index, 1);
+      renderDeptList();
+    }
+
+    document.getElementById('add-btn').onclick = () => {
+      const input = document.getElementById('new-dept');
+      const val = input.value.trim();
+      if (val && !departments.includes(val)) {
+        departments.push(val);
+        input.value = '';
+        renderDeptList();
+      }
+    };
+
+    document.getElementById('update-btn').onclick = async () => {
+      const btn = document.getElementById('update-btn');
+      const status = document.getElementById('status-msg');
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+      
+      try {
+        const res = await authFetch('/api/departments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ departments })
+        });
+        const data = await res.json();
+        if (data.success) {
+          status.textContent = 'Successfully updated and broadcasted to kiosks!';
+          status.className = 'text-center text-sm mt-3 text-emerald-600';
+          populateDeptFilter();
+        } else { throw new Error('Update failed'); }
+      } catch (e) {
+        status.textContent = 'Network error.';
+        status.className = 'text-center text-sm mt-3 text-red-600';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Update All Kiosks';
+        setTimeout(() => { status.textContent = ''; }, 3000);
+      }
+    };
+
+    // --- DATA EXPORT / RESET ---
+    async function downloadBackup() {
+      // Using fetch so we can pass the Auth header, then create a temporary link to download the zip blob
+      try {
+        const res = await authFetch('/api/admin/backup');
+        if (!res.ok) throw new Error('Backup failed');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'srm_backup.zip';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      } catch (e) {
+        alert("Failed to download backup.");
+      }
+    }
+
+    async function resetDatabase() {
+      if (!confirm("Are you ABSOLUTELY sure you want to delete all user records? Have you downloaded a backup first?")) return;
+      
+      try {
+        const res = await authFetch('/api/admin/reset', { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          alert("Database successfully reset.");
+          if (document.getElementById('tab-dashboard').classList.contains('active')) fetchMetrics();
+          if (document.getElementById('tab-users').classList.contains('active')) fetchUsers(1);
+        } else {
+          alert("Error resetting database: " + data.error);
+        }
+      } catch (e) {
+        alert("Network error while trying to reset database.");
+      }
+    }
+
+    // Initialize UI
+    fetchDepartments(); // Populates filter
+    fetchMetrics();
+  </script>
+</body>
+</html>

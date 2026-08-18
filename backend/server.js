@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const archiver = require('archiver');
 require('dotenv').config();
 
 const { generateSportsCanvas } = require('./utils/canvasGenerator');
@@ -60,6 +61,11 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
+const departmentSchema = new mongoose.Schema({
+  name: String
+});
+const Department = mongoose.model('Department', departmentSchema);
+
 // --- QUEUE SETUP (BULLMQ) ---
 const connection = { host: REDIS_HOST, port: REDIS_PORT, password: REDIS_PASSWORD, db: REDIS_DB };
 const processQueue = new Queue('imageProcessing', { connection });
@@ -94,8 +100,23 @@ const mongoOptions = {
   minPoolSize: process.env.MONGO_MIN_POOL_SIZE ? parseInt(process.env.MONGO_MIN_POOL_SIZE) : 5,
 };
 
+let cachedDepartments = [];
+
+async function loadDepartments() {
+  try {
+    const deps = await Department.find();
+    cachedDepartments = deps.map(d => d.name);
+    console.log(`Loaded ${cachedDepartments.length} departments.`);
+  } catch (err) {
+    console.error('Error loading departments:', err);
+  }
+}
+
 mongoose.connect(MONGO_URI, mongoOptions)
-  .then(() => console.log('MongoDB connected'))
+  .then(() => {
+    console.log('MongoDB connected');
+    loadDepartments();
+  })
   .catch(err => console.error('MongoDB connection error:', err));
 
 // --- WEBSOCKETS ---
@@ -106,6 +127,9 @@ io.on('connection', (socket) => {
 
   // Send current version to the client for auto-updates
   socket.emit('version_check', { version: APP_VERSION });
+  
+  // Send current departments list
+  socket.emit('departments_update', cachedDepartments);
 
   socket.on('join_room', (roomId) => {
     socket.join(roomId);
@@ -115,6 +139,201 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
+});
+
+// --- ADMIN AUTH & MIDDLEWARE ---
+app.get('/admin-login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+    // Basic simple token using base64 for demonstration (or just return password as token)
+    const token = Buffer.from(`${username}:${password}`).toString('base64');
+    res.json({ success: true, token });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+const verifyAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+  const token = authHeader.split(' ')[1];
+  const expectedToken = Buffer.from(`${process.env.ADMIN_USERNAME}:${process.env.ADMIN_PASSWORD}`).toString('base64');
+  if (token !== expectedToken) return res.status(403).json({ error: 'Forbidden' });
+  next();
+};
+
+async function getMetricsData() {
+  const totalUsers = await User.countDocuments();
+  const kiosks = await User.distinct('kioskId');
+  const totalKiosks = kiosks.length;
+  const deptCounts = await User.aggregate([{ $group: { _id: "$course", count: { $sum: 1 } } }]);
+  const genderCounts = await User.aggregate([{ $group: { _id: "$gender", count: { $sum: 1 } } }]);
+  return { totalUsers, totalKiosks, departments: deptCounts, genders: genderCounts };
+}
+
+async function broadcastMetrics() {
+  try {
+    const data = await getMetricsData();
+    io.emit('metrics_update', data);
+  } catch (e) {
+    console.error('Failed to broadcast metrics', e);
+  }
+}
+
+// --- ADMIN ROUTES ---
+app.get('/admin-panel', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/api/departments', verifyAdmin, (req, res) => {
+  res.json({ success: true, departments: cachedDepartments });
+});
+
+app.post('/api/departments', verifyAdmin, async (req, res) => {
+  try {
+    const { departments } = req.body;
+    if (!Array.isArray(departments)) return res.status(400).json({ error: 'Expected array of strings' });
+    
+    await Department.deleteMany({});
+    if (departments.length > 0) {
+      const docs = departments.map(d => ({ name: d }));
+      await Department.insertMany(docs);
+    }
+    
+    cachedDepartments = departments;
+    io.emit('departments_update', cachedDepartments);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating departments:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- DASHBOARD METRICS ---
+app.get('/api/admin/metrics', verifyAdmin, async (req, res) => {
+  try {
+    const data = await getMetricsData();
+    res.json({ success: true, ...data });
+  } catch (err) {
+    console.error('Metrics error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- PAGINATED USERS ---
+app.get('/api/admin/users', verifyAdmin, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const sortBy = req.query.sortBy || '-createdAt';
+    const department = req.query.department;
+    const gender = req.query.gender;
+
+    let query = {};
+    if (department) query.course = department;
+    if (gender) query.gender = gender;
+
+    const users = await User.find(query)
+      .sort(sortBy)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select('-answers'); // Exclude answers to save bandwidth if not needed, or keep them
+
+    const total = await User.countDocuments(query);
+    res.json({
+      success: true,
+      users,
+      total,
+      page,
+      pages: Math.ceil(total / limit)
+    });
+  } catch (err) {
+    console.error('Users fetch error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- BACKUP DATA (ZIP + CSV) ---
+app.get('/api/admin/backup', verifyAdmin, async (req, res) => {
+  try {
+    const users = await User.find();
+    
+    // Create CSV content manually
+    let csv = 'ID,Name,Course,Year,WhatsApp,Email,Gender,Archetype,Date,ImagePath\n';
+    users.forEach(u => {
+      const img = u.imageUrl ? `images/${u.imageUrl}` : '';
+      csv += `"${u._id}","${u.name}","${u.course}","${u.year}","${u.whatsappNumber}","${u.email || ''}","${u.gender}","${u.archetype}","${u.createdAt}","${img}"\n`;
+    });
+
+    res.attachment('srm_backup.zip');
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    archive.on('error', (err) => {
+      console.error('Archive Error:', err);
+      if (!res.headersSent) res.status(500).send({ error: err.message });
+    });
+
+    archive.pipe(res);
+    archive.append(csv, { name: 'users.csv' });
+
+    // Stream images from MinIO into the archive
+    for (const u of users) {
+      if (u.imageUrl) {
+        try {
+          const imgStream = await minioClient.getObject(BUCKET_NAME, u.imageUrl);
+          archive.append(imgStream, { name: `images/${u.imageUrl}` });
+        } catch (minioErr) {
+          console.error(`Failed to fetch image ${u.imageUrl} for zip:`, minioErr);
+        }
+      }
+    }
+
+    await archive.finalize();
+  } catch (err) {
+    console.error('Backup error:', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- RESET DATABASE ---
+app.delete('/api/admin/reset', verifyAdmin, async (req, res) => {
+  try {
+    await User.deleteMany({});
+    broadcastMetrics();
+    res.json({ success: true, message: 'Database cleared' });
+  } catch (err) {
+    console.error('Reset error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- ADMIN BADGE PREVIEW ---
+app.get('/api/admin/preview-badge/:userId', verifyAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user || !user.imageUrl) return res.status(404).send('User or photo not found');
+
+    const dataStream = await minioClient.getObject(BUCKET_NAME, user.imageUrl);
+    const rawBuffer = await new Promise((resolve, reject) => {
+      const chunks = [];
+      dataStream.on('data', c => chunks.push(c));
+      dataStream.on('end', () => resolve(Buffer.concat(chunks)));
+      dataStream.on('error', reject);
+    });
+
+    const canvas = await generateSportsCanvas(user, rawBuffer);
+    const finalBuffer = canvas.toBuffer('image/jpeg', { quality: 0.95 });
+
+    res.set('Content-Type', 'image/jpeg');
+    res.send(finalBuffer);
+  } catch (err) {
+    console.error('Preview error:', err);
+    res.status(500).send('Error generating preview');
+  }
 });
 
 // --- API ENDPOINTS ---
@@ -157,6 +376,9 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
     // 1. Save to MongoDB
     const user = new User({ name, course, year, whatsappNumber, email, gender, archetype, answers: parsedAnswers, kioskId, imageUrl: fileName });
     await user.save();
+    
+    // Broadcast updated metrics
+    broadcastMetrics();
 
     // 2. The roomId for this specific user session
     const roomId = `room_${kioskId}_${user._id}`;

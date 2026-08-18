@@ -11,7 +11,15 @@ const BACKEND_URL = (import.meta.env && typeof import.meta.env.VITE_BACKEND_URL 
 const APP_VERSION = '1.0.7';
 
 // Global Socket for App Updates
-const appSocket = io(BACKEND_URL);
+const appSocket = io(BACKEND_URL, {
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  reconnectionAttempts: Infinity
+});
+
+appSocket.on('connect', () => console.log('Socket connected successfully.'));
+appSocket.on('disconnect', () => console.log('Socket disconnected. Reconnecting...'));
 appSocket.on('version_check', (data) => {
   if (data.version && data.version !== APP_VERSION) {
     console.log(`New version detected (${data.version})! Showing update prompt.`);
@@ -27,6 +35,25 @@ appSocket.on('version_check', (data) => {
     }
   }
 });
+appSocket.on('departments_update', (departments) => {
+  const courseSelect = document.getElementById('course');
+  if (!courseSelect) return;
+  
+  const currentValue = courseSelect.value;
+  courseSelect.innerHTML = '<option value="" disabled selected>Select Course</option>';
+  
+  departments.forEach(dep => {
+    const opt = document.createElement('option');
+    opt.value = dep;
+    opt.textContent = dep;
+    courseSelect.appendChild(opt);
+  });
+  
+  if (departments.includes(currentValue)) {
+    courseSelect.value = currentValue;
+  }
+});
+
 const KIOSK_ID = (import.meta.env && import.meta.env.VITE_KIOSK_ID) 
   ? import.meta.env.VITE_KIOSK_ID 
   : 'web-kiosk-1';
