@@ -3,8 +3,9 @@ module.exports = {
     {
       name: 'srm-api-server',
       script: 'server.js',
-      // 2 instances for concurrency. Redis adapter syncs socket sessions across workers.
-      instances: 2, 
+      // Single instance strictly required. Socket.IO polling requires sticky sessions.
+      // With PM2 cluster round-robin, clients running cached code hit different workers and get "Session ID Unknown".
+      instances: 1, 
       exec_mode: 'cluster', 
       // Restart if memory exceeds 2.5GB per instance
       max_memory_restart: '2500M',
