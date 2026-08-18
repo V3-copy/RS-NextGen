@@ -5,13 +5,15 @@ require('dotenv').config();
 const MONGO_URI = process.env.MONGO_DB || 'mongodb://127.0.0.1:27017/kiosk';
 const REDIS_HOST = process.env.REDIS_HOST || '127.0.0.1';
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD || undefined;
+const REDIS_DB = process.env.REDIS_DB ? parseInt(process.env.REDIS_DB) : 0;
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
   .then(() => console.log('[Worker] MongoDB connected'))
   .catch(err => console.error('[Worker] MongoDB connection error:', err));
 
-const connection = { host: REDIS_HOST, port: REDIS_PORT };
+const connection = { host: REDIS_HOST, port: REDIS_PORT, password: REDIS_PASSWORD, db: REDIS_DB };
 
 const worker = new Worker('imageProcessing', async (job) => {
   const { userId, whatsappNumber, roomId } = job.data;

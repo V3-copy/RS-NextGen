@@ -29,6 +29,8 @@ app.use(express.json({ limit: '50mb' }));
 const MONGO_URI = process.env.MONGO_DB || 'mongodb://127.0.0.1:27017/kiosk';
 const REDIS_HOST = process.env.REDIS_HOST || '127.0.0.1';
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD || undefined;
+const REDIS_DB = process.env.REDIS_DB ? parseInt(process.env.REDIS_DB) : 0;
 
 const minioClient = new MinioClient({
   endPoint: process.env.MINIO_ENDPOINT || '127.0.0.1',
@@ -54,9 +56,9 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 // --- QUEUE SETUP (BULLMQ) ---
-const connection = { host: REDIS_HOST, port: REDIS_PORT };
+const connection = { host: REDIS_HOST, port: REDIS_PORT, password: REDIS_PASSWORD, db: REDIS_DB };
 const processQueue = new Queue('imageProcessing', { connection });
-const redisClient = new Redis({ host: REDIS_HOST, port: REDIS_PORT });
+const redisClient = new Redis(connection);
 
 const queueEvents = new QueueEvents('imageProcessing', { connection });
 queueEvents.on('progress', ({ jobId, data }) => {
