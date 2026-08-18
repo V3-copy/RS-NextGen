@@ -9,14 +9,23 @@ const BACKEND_URL = (import.meta.env && typeof import.meta.env.VITE_BACKEND_URL 
       ? 'http://localhost:3001' 
       : `http://${window.location.hostname}:3001`);
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.2';
 
 // Global Socket for App Updates
 const appSocket = io(BACKEND_URL);
 appSocket.on('version_check', (data) => {
   if (data.version && data.version !== APP_VERSION) {
-    console.log('New version detected! Reloading app...');
-    window.location.reload(true);
+    console.log(`New version detected (${data.version})! Showing update prompt.`);
+    const updateOverlay = document.getElementById('update-prompt-overlay');
+    if (updateOverlay) {
+      updateOverlay.classList.remove('hidden');
+      // small delay for transition
+      setTimeout(() => {
+        updateOverlay.classList.remove('opacity-0');
+        updateOverlay.firstElementChild.classList.remove('scale-95');
+        updateOverlay.firstElementChild.classList.add('scale-100');
+      }, 10);
+    }
   }
 });
 const KIOSK_ID = (import.meta.env && import.meta.env.VITE_KIOSK_ID) 
@@ -31,7 +40,7 @@ const state = {
   whatsappNumber: '',
   archetype: '',
   answers: [],      // collected keyword answers from questions
-  base64Image: null
+  imageBlob: null
 };
 
 // ─── DOM Elements ─────────────────────────────────────────────────────────────
@@ -166,7 +175,19 @@ document.addEventListener('contextmenu', (e) => {
 // ─── Navigation ───────────────────────────────────────────────────────────────
 function switchScreen(screenName) {
   Object.values(screens).forEach(s => s.classList.remove('active'));
-  screens[screenName].classList.add('active');
+  if (screens[screenName]) {
+    screens[screenName].classList.add('active');
+  }
+  
+  const driftwallContainer = document.getElementById('driftwall-container');
+  if (driftwallContainer) {
+    if (screenName === 'welcome') {
+      driftwallContainer.classList.add('active-on-welcome');
+    } else {
+      driftwallContainer.classList.remove('active-on-welcome');
+    }
+  }
+
   handleInteraction();
 }
 
@@ -268,7 +289,7 @@ function resetApp() {
   state.whatsappNumber = '';
   state.archetype      = '';
   state.answers        = [];
-  state.base64Image    = null;
+  state.imageBlob      = null;
 
   if (inputName)     inputName.value = '';
   if (inputCourse)   inputCourse.value = '';
@@ -300,9 +321,75 @@ function resetApp() {
   initAuth();
 }
 
+// ─── DRIFTWALL (RECENT IMAGES) ────────────────────────────────────────────────
+let recentImagesCache = [];
+
+async function fetchRecentImages() {
+  if (!kioskToken) return;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/kiosk/recent-images`, {
+      headers: { 'x-kiosk-token': kioskToken }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.images) {
+        recentImagesCache = data.images;
+        renderDriftWall();
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch recent images for DriftWall:', err);
+  }
+}
+
+function renderDriftWall() {
+  const container = document.getElementById('driftwall-container');
+  const columnsContainer = document.getElementById('driftwall-columns');
+  
+  // Show only if >= 10 images are available
+  if (recentImagesCache.length < 10) {
+    container.classList.add('hidden');
+    document.getElementById('app').classList.remove('split-active');
+    return;
+  }
+  
+  // Ensure the layout uses split screen for welcome
+  document.getElementById('app').classList.add('split-active');
+  container.classList.remove('hidden');
+  
+  columnsContainer.innerHTML = '';
+  
+  // Distribute images into 3 columns
+  const numCols = 3;
+  const cols = Array.from({ length: numCols }, () => []);
+  recentImagesCache.forEach((img, i) => {
+    cols[i % numCols].push(img);
+  });
+  
+  // To make the scroll infinite, we duplicate items in each column
+  cols.forEach(colData => {
+    if (colData.length === 0) return;
+    
+    const colDiv = document.createElement('div');
+    colDiv.className = 'drift-column';
+    
+    // Duplicate 3 times for a long seamless scroll
+    const items = [...colData, ...colData, ...colData];
+    items.forEach(img => {
+      const imgDiv = document.createElement('div');
+      imgDiv.className = 'drift-item';
+      imgDiv.innerHTML = `<img src="${BACKEND_URL}${img.url}" alt="${img.name}" loading="lazy" />`;
+      colDiv.appendChild(imgDiv);
+    });
+    
+    columnsContainer.appendChild(colDiv);
+  });
+}
+
 function initAuth() {
   kioskToken = localStorage.getItem('kioskToken');
   if (kioskToken) {
+    fetchRecentImages();
     switchScreen('welcome');
   } else {
     switchScreen('login');
@@ -575,17 +662,31 @@ function stopCamera() {
 if (btnCapture) {
   btnCapture.addEventListener('click', () => {
     if (!stream) return;
-    photoCanvas.width  = video.videoWidth;
-    photoCanvas.height = video.videoHeight;
+    const MAX_SIZE = 720;
+    let width = video.videoWidth;
+    let height = video.videoHeight;
+    
+    if (width > height && width > MAX_SIZE) {
+      height *= MAX_SIZE / width;
+      width = MAX_SIZE;
+    } else if (height > MAX_SIZE) {
+      width *= MAX_SIZE / height;
+      height = MAX_SIZE;
+    }
+    
+    photoCanvas.width  = width;
+    photoCanvas.height = height;
     const ctx = photoCanvas.getContext('2d');
-    ctx.translate(photoCanvas.width, 0);
+    ctx.translate(width, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, photoCanvas.width, photoCanvas.height);
-    const dataUrl = photoCanvas.toDataURL('image/jpeg', 0.7);
-    state.base64Image = dataUrl;
-    stopCamera();
-    switchScreen('success');
-    submitData();
+    ctx.drawImage(video, 0, 0, width, height);
+    
+    photoCanvas.toBlob((blob) => {
+      state.imageBlob = blob;
+      stopCamera();
+      switchScreen('success');
+      submitData();
+    }, 'image/jpeg', 0.8);
   });
 }
 
@@ -598,16 +699,18 @@ async function generateAndShowArt() {
   identityArtImg.classList.add('hidden');
 
   try {
+    const formData = new FormData();
+    formData.append('name', state.name);
+    formData.append('year', state.year);
+    formData.append('archetype', state.archetype);
+    formData.append('answers', JSON.stringify(state.answers));
+    if (state.imageBlob) {
+      formData.append('image', state.imageBlob, 'photo.jpg');
+    }
+
     const res = await fetch(`${BACKEND_URL}/api/generate-canvas`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name:      state.name,
-        year:      state.year,
-        archetype: state.archetype,
-        answers:   state.answers,
-        base64Image: state.base64Image
-      })
+      body: formData
     });
     const data = await res.json();
     if (data.success) {
@@ -627,20 +730,22 @@ async function generateAndShowArt() {
 // ─── SUBMIT & WEBSOCKETS ──────────────────────────────────────────────────────
 async function submitData() {
   try {
+    const formData = new FormData();
+    formData.append('name', state.name);
+    formData.append('course', state.course);
+    formData.append('year', state.year);
+    formData.append('whatsappNumber', state.whatsappNumber);
+    formData.append('archetype', state.archetype);
+    formData.append('answers', JSON.stringify(state.answers));
+    formData.append('kioskId', KIOSK_ID);
+    formData.append('kioskToken', kioskToken);
+    if (state.imageBlob) {
+      formData.append('image', state.imageBlob, 'photo.jpg');
+    }
+
     const response = await fetch(`${BACKEND_URL}/api/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name:            state.name,
-        course:          state.course,
-        year:            state.year,
-        whatsappNumber:  state.whatsappNumber,
-        archetype:       state.archetype,
-        answers:         state.answers,
-        kioskId:         KIOSK_ID,
-        kioskToken:      kioskToken,
-        base64Image:     state.base64Image
-      })
+      body: formData
     });
 
     if (response.status === 401) {
@@ -654,13 +759,6 @@ async function submitData() {
     const resData = await response.json();
 
     const socket = io(BACKEND_URL);
-
-    socket.on('version_check', (data) => {
-      if (data.version && data.version !== APP_VERSION) {
-        console.log('New version detected, refreshing app...');
-        window.location.reload(true);
-      }
-    });
 
     socket.on('connect', () => {
       socket.emit('join_room', resData.roomId);
@@ -736,4 +834,11 @@ if (isIos() && !isInStandaloneMode()) {
       });
     }
   }
+}
+// --- Update Prompt Setup ---
+const btnReloadApp = document.getElementById('btn-reload-app');
+if (btnReloadApp) {
+  btnReloadApp.addEventListener('click', () => {
+    window.location.reload(true);
+  });
 }

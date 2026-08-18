@@ -9,6 +9,7 @@ const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 require('dotenv').config();
 
 const { generateSportsCanvas } = require('./utils/canvasGenerator');
@@ -24,6 +25,8 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 // --- INFRASTRUCTURE CONFIG ---
 const MONGO_URI = process.env.MONGO_DB || 'mongodb://127.0.0.1:27017/kiosk';
@@ -94,7 +97,7 @@ mongoose.connect(MONGO_URI, mongoOptions)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // --- WEBSOCKETS ---
-const APP_VERSION = process.env.APP_VERSION || '1.0.0';
+const APP_VERSION = process.env.APP_VERSION || '1.0.4';
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
@@ -122,21 +125,27 @@ app.post('/api/kiosk/login', (req, res) => {
   }
 });
 
-app.post('/api/register', async (req, res) => {
-  const { name, course, year, whatsappNumber, archetype, answers, kioskId, base64Image, kioskToken } = req.body;
+app.post('/api/register', upload.single('image'), async (req, res) => {
+  const { name, course, year, whatsappNumber, archetype, answers, kioskId, kioskToken } = req.body;
   
   if (kioskToken !== process.env.KIOSK_PASSWORD) {
     return res.status(401).json({ error: 'Unauthorized kiosk' });
   }
   
-  if (!name || !whatsappNumber || !base64Image) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  if (!name || !whatsappNumber || !req.file) {
+    return res.status(400).json({ error: 'Missing required fields or image' });
+  }
+
+  let parsedAnswers = [];
+  try {
+    parsedAnswers = answers ? JSON.parse(answers) : [];
+  } catch(e) {
+    console.error('Error parsing answers:', e);
   }
 
   try {
     // Save raw image to MinIO
-    const base64Data = base64Image.replace(/^data:image\/[a-z]+;base64,/, "");
-    const buffer = Buffer.from(base64Data, 'base64');
+    const buffer = req.file.buffer;
     const fileName = `raw_${crypto.randomBytes(8).toString('hex')}.jpg`;
     
     await minioClient.putObject(BUCKET_NAME, fileName, buffer, buffer.length, {
@@ -144,7 +153,7 @@ app.post('/api/register', async (req, res) => {
     });
 
     // 1. Save to MongoDB
-    const user = new User({ name, course, year, whatsappNumber, archetype, answers, kioskId, imageUrl: fileName });
+    const user = new User({ name, course, year, whatsappNumber, archetype, answers: parsedAnswers, kioskId, imageUrl: fileName });
     await user.save();
     
     // 2. The roomId for this specific user session
@@ -168,17 +177,48 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// --- CANVAS PREVIEW ENDPOINT ---
-app.post('/api/generate-canvas', async (req, res) => {
+// --- RECENT IMAGES ENDPOINT (DRIFTWALL) ---
+app.get('/api/kiosk/recent-images', async (req, res) => {
+  const kioskToken = req.headers['x-kiosk-token'];
+  if (kioskToken !== process.env.KIOSK_PASSWORD) {
+    return res.status(401).json({ error: 'Unauthorized kiosk' });
+  }
+
   try {
-    const { name, year, archetype, answers, base64Image } = req.body;
-    let userImageBuffer = null;
-    if (base64Image) {
-      const b64Data = base64Image.replace(/^data:image\/[a-z]+;base64,/, "");
-      userImageBuffer = Buffer.from(b64Data, 'base64');
-    }
+    const recentUsers = await User.find({ imageUrl: { $exists: true, $ne: null } })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select('_id name course archetype');
+
+    const images = recentUsers.map(user => ({
+      id: user._id,
+      name: user.name,
+      course: user.course,
+      archetype: user.archetype,
+      url: `/api/download/${user._id}`
+    }));
+
+    res.json({ success: true, count: images.length, images });
+  } catch (error) {
+    console.error('Error fetching recent images:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- CANVAS PREVIEW ENDPOINT ---
+app.post('/api/generate-canvas', upload.single('image'), async (req, res) => {
+  try {
+    const { name, year, archetype, answers } = req.body;
+    let userImageBuffer = req.file ? req.file.buffer : null;
     
-    const canvas = await generateSportsCanvas(req.body, userImageBuffer);
+    let parsedAnswers = [];
+    try {
+      parsedAnswers = answers ? JSON.parse(answers) : [];
+    } catch(e) {}
+    
+    const bodyForCanvas = { name, year, archetype, answers: parsedAnswers };
+    
+    const canvas = await generateSportsCanvas(bodyForCanvas, userImageBuffer);
     res.json({ success: true, canvasDataUrl: canvas.toDataURL('image/png') });
   } catch (err) {
     console.error('[Canvas] Preview error:', err);

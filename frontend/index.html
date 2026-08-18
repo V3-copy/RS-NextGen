@@ -8,8 +8,8 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/favicon.ico" />
     <link rel="manifest" href="/manifest.json">
     <!-- Google Fonts for Modern Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,10 +21,19 @@
     <!-- App Container -->
     <div id="app" class="app-container">
       
+      <!-- DriftWall Background (Hidden by default) -->
+      <div id="driftwall-container" class="driftwall-container hidden">
+        <div class="driftwall-columns" id="driftwall-columns"></div>
+        <div class="driftwall-overlay"></div>
+      </div>
+
       <!-- Screen 0: Kiosk Login -->
       <section id="screen-login" class="screen active">
         <div class="glass-panel w-full max-w-md mx-auto text-center">
-          <h2 class="text-3xl font-outfit font-bold mb-6 text-white">Kiosk Authentication</h2>
+          <div class="mb-6 flex justify-center">
+            <img src="/srm-logo.png" alt="SRM Logo" class="max-w-[200px] h-auto object-contain drop-shadow-[0_0_15px_rgba(229,168,35,0.4)]" />
+          </div>
+          <h2 class="text-2xl font-outfit font-bold mb-6 text-white tracking-wide">Kiosk Authentication</h2>
           <form id="login-form" class="flex flex-col gap-4">
             <div class="input-group">
               <input type="text" id="kiosk-username" placeholder="Username" required autocomplete="off" />
@@ -38,11 +47,28 @@
         </div>
       </section>
 
-      <!-- Screen 1: Welcome -->
+      <!-- Screen 1: Welcome (Animated Idle Screen) -->
       <section id="screen-welcome" class="screen">
-        <div class="glass-panel text-center">
-          <h1 class="glow-text">Welcome to SRM</h1>
-          <p class="pulse-text mt-4 text-xl">Tap Anywhere to Begin</p>
+        <div class="glass-panel text-center max-w-2xl mx-auto py-12 px-8 flex flex-col items-center justify-center relative overflow-hidden">
+          
+          <!-- SRM Logo -->
+          <div class="mb-6">
+            <img src="/srm-logo.png" alt="SRM Logo" class="max-w-[240px] md:max-w-[280px] h-auto object-contain mx-auto drop-shadow-[0_0_15px_rgba(229,168,35,0.4)]" />
+          </div>
+
+          <div class="gold-badge mb-4">
+            <span>SRM IST Tiruchirappalli</span>
+          </div>
+
+          <h1 class="glow-text mb-3">Welcome to SRM</h1>
+          <p class="text-slate-300 text-lg md:text-xl font-medium max-w-lg mb-8">Learn. Leap. Lead.</p>
+
+          <div class="pulse-text flex items-center justify-center gap-3 text-xl md:text-2xl cursor-pointer">
+            <span class="w-3 h-3 rounded-full bg-[#e5a823] animate-ping"></span>
+            <span>Tap Anywhere to Begin</span>
+            <span class="w-3 h-3 rounded-full bg-[#e5a823] animate-ping"></span>
+          </div>
+
         </div>
       </section>
 
@@ -235,6 +261,16 @@
       <button id="btn-close-pwa-prompt" class="p-2 text-white/50 hover:text-white transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
+    </div>
+
+    <!-- Update Prompt Overlay -->
+    <div id="update-prompt-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[300] hidden flex-col items-center justify-center transition-all opacity-0">
+      <div class="bg-gray-900 p-8 rounded-2xl border border-[var(--color-srm-yellow)]/50 text-center max-w-md w-[90%] shadow-2xl transform scale-95 transition-all">
+        <div class="text-5xl mb-4">🚀</div>
+        <h3 class="text-2xl text-white font-bold mb-3">Update Available</h3>
+        <p class="text-white/70 mb-8">A new version of the application has been released. Please reload to apply updates.</p>
+        <button id="btn-reload-app" class="px-8 py-3 bg-[var(--color-srm-yellow)] hover:bg-yellow-500 text-black rounded-xl font-bold text-xl transition-all shadow-lg w-full">Reload Now</button>
+      </div>
     </div>
 
     <script type="module" src="/main.js"></script>
