@@ -185,7 +185,17 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  // Removed Top Right Event Name
+  // Top Right: Keywords from Answers
+  ctx.save();
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.font = '800 24px "Inter", sans-serif';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+  if (safeAnswers && safeAnswers.length > 0) {
+    const keywords = safeAnswers.map(ans => ans.split(' ')[0].toUpperCase()).join(' • ');
+    ctx.fillText(keywords, W - 40, 40);
+  }
+  ctx.restore();
 
   // 5. CENTER IMAGE FRAME (Premium Glassmorphic Edge)
   const frameX = 140;
