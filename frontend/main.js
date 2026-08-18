@@ -8,7 +8,7 @@ const BACKEND_URL = (import.meta.env && typeof import.meta.env.VITE_BACKEND_URL 
   : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
       ? 'http://localhost:3001' 
       : `http://${window.location.hostname}:3001`);
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.0.5';
 
 // Global Socket for App Updates
 const appSocket = io(BACKEND_URL);
@@ -88,10 +88,21 @@ const btnSkip       = document.getElementById('btn-skip-question');
 const progressDots  = document.querySelectorAll('.dot');
 
 // Camera
-const video               = document.getElementById('camera-preview');
-const btnCapture          = document.getElementById('btn-capture');
-const btnCameraPermission = document.getElementById('btn-camera-permission');
-const photoCanvas         = document.getElementById('photo-canvas');
+const video                  = document.getElementById('camera-preview');
+const btnCaptureNew          = document.getElementById('btn-capture');
+const btnCameraPermission    = document.getElementById('btn-camera-permission');
+const photoCanvas            = document.getElementById('photo-canvas');
+
+// New Camera Elements
+const cameraCountdown        = document.getElementById('camera-countdown');
+const cameraCountdownOverlay = document.getElementById('camera-countdown-overlay');
+const cameraPrompt           = document.getElementById('camera-prompt');
+const cameraRawPreview       = document.getElementById('camera-raw-preview');
+const cameraActions          = document.getElementById('camera-actions');
+const cameraCaptureControls  = document.getElementById('camera-capture-controls');
+const cameraTopText          = document.getElementById('camera-top-text');
+const btnRetake              = document.getElementById('btn-retake');
+const btnContinue            = document.getElementById('btn-continue');
 
 // Success
 const statusMsg           = document.getElementById('status-msg');
@@ -363,8 +374,8 @@ function renderDriftWall() {
   const container = document.getElementById('driftwall-container');
   const columnsContainer = document.getElementById('driftwall-columns');
   
-  // Show only if >= 10 images are available
-  if (recentImagesCache.length < 10) {
+  // Show only if >= 6 images are available
+  if (recentImagesCache.length < 6) {
     container.classList.add('hidden');
     document.getElementById('app').classList.remove('split-active');
     return;
@@ -376,8 +387,8 @@ function renderDriftWall() {
   
   columnsContainer.innerHTML = '';
   
-  // Distribute images into 3 columns
-  const numCols = 3;
+  // Distribute images into 5 columns
+  const numCols = 5;
   const cols = Array.from({ length: numCols }, () => []);
   recentImagesCache.forEach((img, i) => {
     cols[i % numCols].push(img);
@@ -659,6 +670,8 @@ if (btnSkip) {
 
 // ─── CAMERA ───────────────────────────────────────────────────────────────────
 let stream = null;
+let isPreviewing = false;
+
 
 async function initCamera() {
   try {
@@ -668,12 +681,22 @@ async function initCamera() {
       audio: false 
     });
     video.srcObject = stream;
-    btnCapture.classList.remove('hidden');
+    resetToCaptureMode();
   } catch (err) {
     console.error('Camera access denied:', err);
-    btnCapture.classList.add('hidden');
     btnCameraPermission.classList.remove('hidden');
   }
+}
+
+function resetToCaptureMode() {
+  isPreviewing = false;
+  cameraRawPreview.classList.add('hidden');
+  cameraActions.classList.add('hidden');
+  cameraCountdownOverlay.classList.add('hidden');
+  if (cameraCaptureControls) cameraCaptureControls.classList.remove('hidden');
+  if (cameraTopText) cameraTopText.innerText = 'Position your face in the frame';
+  state.imageBlob = null;
+  if (video.paused) video.play();
 }
 
 if (btnCameraPermission) btnCameraPermission.addEventListener('click', initCamera);
@@ -685,36 +708,88 @@ function stopCamera() {
   }
 }
 
-if (btnCapture) {
-  btnCapture.addEventListener('click', () => {
-    if (!stream) return;
-    const MAX_SIZE = 720;
-    let width = video.videoWidth;
-    let height = video.videoHeight;
-    
-    if (width > height && width > MAX_SIZE) {
-      height *= MAX_SIZE / width;
-      width = MAX_SIZE;
-    } else if (height > MAX_SIZE) {
-      width *= MAX_SIZE / height;
-      height = MAX_SIZE;
+if (btnCaptureNew) {
+  btnCaptureNew.addEventListener('click', startCountdownSequence);
+}
+
+function startCountdownSequence() {
+  if (!stream || isPreviewing) return;
+  
+  if (cameraCaptureControls) cameraCaptureControls.classList.add('hidden');
+  cameraCountdownOverlay.classList.remove('hidden');
+  
+  const prompts = ['Get Ready!', 'Smile! 😁', 'Cheers! 🥂'];
+  let count = 3;
+  
+  cameraCountdown.innerText = count;
+  cameraPrompt.innerText = prompts[0];
+  
+  const countdownInterval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      cameraCountdown.innerText = count;
+      cameraCountdown.style.transform = 'scale(1.3)';
+      setTimeout(() => { cameraCountdown.style.transform = 'scale(1)'; }, 200);
+      if (count === 2) cameraPrompt.innerText = prompts[1];
+      if (count === 1) cameraPrompt.innerText = prompts[2];
+    } else {
+      clearInterval(countdownInterval);
+      cameraCountdownOverlay.classList.add('hidden');
+      takePicture();
     }
-    
-    photoCanvas.width  = width;
-    photoCanvas.height = height;
-    const ctx = photoCanvas.getContext('2d');
-    ctx.translate(width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, width, height);
-    
-    photoCanvas.toBlob((blob) => {
-      state.imageBlob = blob;
-      stopCamera();
-      switchScreen('success');
-      submitData();
-    }, 'image/jpeg', 0.8);
+  }, 1000);
+}
+
+function takePicture() {
+  const MAX_SIZE = 900;
+  let width = video.videoWidth;
+  let height = video.videoHeight;
+  
+  if (width > height && width > MAX_SIZE) {
+    height = Math.round(height * MAX_SIZE / width);
+    width = MAX_SIZE;
+  } else if (height > MAX_SIZE) {
+    width = Math.round(width * MAX_SIZE / height);
+    height = MAX_SIZE;
+  }
+  
+  photoCanvas.width  = width;
+  photoCanvas.height = height;
+  const ctx = photoCanvas.getContext('2d');
+  ctx.translate(width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, width, height);
+  
+  photoCanvas.toBlob((blob) => {
+    state.imageBlob = blob;
+    isPreviewing = true;
+    const url = URL.createObjectURL(blob);
+    cameraRawPreview.src = url;
+    cameraRawPreview.classList.remove('hidden');
+    video.classList.add('hidden');
+    cameraActions.classList.remove('hidden');
+    if (cameraCaptureControls) cameraCaptureControls.classList.add('hidden');
+    if (cameraTopText) cameraTopText.innerText = 'Photo taken!';
+    video.pause();
+  }, 'image/jpeg', 0.85);
+}
+
+if (btnRetake) {
+  btnRetake.addEventListener('click', () => {
+    if (cameraRawPreview.src) URL.revokeObjectURL(cameraRawPreview.src);
+    video.classList.remove('hidden');
+    resetToCaptureMode();
   });
 }
+
+if (btnContinue) {
+  btnContinue.addEventListener('click', () => {
+    stopCamera();
+    switchScreen('success');
+    submitData();
+  });
+}
+
 
 // ─── IDENTITY ART GENERATOR (called after QR is ready) ───────────────────────
 async function generateAndShowArt() {
@@ -866,7 +941,27 @@ if (isIos() && !isInStandaloneMode()) {
 // --- Update Prompt Setup ---
 const btnReloadApp = document.getElementById('btn-reload-app');
 if (btnReloadApp) {
-  btnReloadApp.addEventListener('click', () => {
-    window.location.reload(true);
+  btnReloadApp.addEventListener('click', async () => {
+    btnReloadApp.disabled = true;
+    btnReloadApp.textContent = 'Updating...';
+
+    try {
+      // 1. Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(r => r.unregister()));
+      }
+
+      // 2. Wipe all caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+    } catch (e) {
+      console.warn('Cache clear error (non-fatal):', e);
+    }
+
+    // 3. Hard reload, bypassing any remaining disk cache
+    window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
   });
 }

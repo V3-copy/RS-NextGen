@@ -204,16 +204,66 @@
 
       <!-- Screen 4: Camera -->
       <section id="screen-camera" class="screen">
-        <div class="camera-container w-full h-full relative flex items-center justify-center">
-          <video id="camera-preview" autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
-          <div class="camera-overlay absolute inset-0 pointer-events-none">
-            <div class="face-guide"></div>
+
+        <!-- Camera viewport card -->
+        <div class="camera-ui-wrapper">
+          
+          <!-- Top label -->
+          <div class="camera-top-label">
+            <span class="camera-live-dot"></span>
+            <span id="camera-top-text">Position your face in the frame</span>
           </div>
-          <button id="btn-capture" class="btn-capture absolute bottom-12 z-10"></button>
-          <button id="btn-camera-permission" class="btn-primary z-10 hidden">Grant Camera Permission</button>
-          <canvas id="photo-canvas" class="hidden"></canvas>
+
+          <!-- The actual camera frame -->
+          <div class="camera-frame-card">
+            <video id="camera-preview" autoplay playsinline class="camera-video-feed"></video>
+            <img id="camera-raw-preview" class="hidden camera-video-feed" />
+            
+            <!-- Corner decorations -->
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+
+            <!-- Countdown overlay (over the frame) -->
+            <div id="camera-countdown-overlay" class="camera-countdown-overlay hidden">
+              <div id="camera-prompt" class="camera-prompt-text">Get Ready!</div>
+              <div id="camera-countdown" class="camera-countdown-number">3</div>
+            </div>
+          </div>
+
+          <!-- Bottom controls -->
+          <div class="camera-bottom-controls">
+            <!-- Capture mode -->
+            <div id="camera-capture-controls" class="camera-ctrl-row">
+              <div class="camera-hint-text">Tap the button to take your photo</div>
+              <button id="btn-capture" class="btn-capture-new">
+                <div class="btn-capture-inner"></div>
+              </button>
+            </div>
+
+            <!-- Preview mode -->
+            <div id="camera-actions" class="camera-ctrl-row hidden">
+              <p class="camera-preview-label">How does this look?</p>
+              <div class="camera-action-btns">
+                <button id="btn-retake" class="btn-camera-secondary">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                  Retake
+                </button>
+                <button id="btn-continue" class="btn-camera-primary">
+                  Let's Go!
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
+
+        <button id="btn-camera-permission" class="btn-primary z-10 hidden">Grant Camera Permission</button>
+        <canvas id="photo-canvas" class="hidden"></canvas>
       </section>
+
 
       <!-- Screen 5: Success & Processing -->
       <section id="screen-success" class="screen relative">
