@@ -28,6 +28,7 @@ const worker = new Worker('imageProcessing', async (job) => {
   try {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
     const downloadUrl = `${backendUrl}/api/download/${userId}`;
+    console.log(`[Worker] Generated Download URL: ${downloadUrl}`);
     
     // Step 2: WhatsApp Sending
     await job.updateProgress({ roomId, event: 'status', data: { status: 'sending_whatsapp', message: 'Dispatching via WhatsApp...' }});
