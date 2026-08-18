@@ -8,6 +8,9 @@ RUN npm install -g pm2
 # Copy package files
 COPY package*.json ./
 
+# Install native compilation dependencies for node-gyp (better-sqlite3, etc.)
+RUN apt-get update && apt-get install -y python3 build-essential && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies
 RUN npm install
 
