@@ -107,6 +107,7 @@ async function loadDepartments() {
     const deps = await Department.find();
     cachedDepartments = deps.map(d => d.name);
     console.log(`Loaded ${cachedDepartments.length} departments.`);
+    io.emit('departments_update', cachedDepartments);
   } catch (err) {
     console.error('Error loading departments:', err);
   }
