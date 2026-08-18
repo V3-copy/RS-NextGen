@@ -1,6 +1,7 @@
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const fs = require('fs');
 const path = require('path');
+
 // Helper: draw rounded rectangle path
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -47,38 +48,44 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   const eventName = parseInt(data.year) === 1 ? 'SRM\nFRESHERS\nDAY\n2026' : 'SRM\nBACK TO\nCAMPUS\n2026';
   
   const safeAnswers = data.answers || [];
-  // Try to use a second answer as sponsor if available, else generic
   let sponsorName = 'SRM\nUNIV';
   if (safeAnswers[1]) {
     const parts = safeAnswers[1].toUpperCase().split(' ');
     sponsorName = parts.length > 1 ? `${parts[0]}\n${parts[1]}` : safeAnswers[1].toUpperCase();
   }
 
-  // 1. BACKGROUND (Gender-based Gradient)
+  // 1. BACKGROUND (Modern Realistic Spotlight Grading)
   const userGender = data.gender ? data.gender.toLowerCase() : 'other';
-  const bgGradient = ctx.createLinearGradient(0, 0, 0, H);
+  
+  // Using a radial gradient from the top-center to simulate a real stadium spotlight fading into shadow
+  const bgGradient = ctx.createRadialGradient(W / 2, -100, 0, W / 2, H / 3, Math.max(W, H));
   
   if (userGender === 'male') {
-    // Dark with blue for males
-    bgGradient.addColorStop(0, '#020617');
-    bgGradient.addColorStop(0.5, '#1e3a8a');
-    bgGradient.addColorStop(1, '#0f172a');
+    // Rich deep sapphire/navy spotlight
+    bgGradient.addColorStop(0, '#1e40af'); // bright spotlight source
+    bgGradient.addColorStop(0.4, '#0f172a'); // mid shadow
+    bgGradient.addColorStop(1, '#020617'); // pure dark edges
   } else if (userGender === 'female') {
-    // Pink with dark for females
-    bgGradient.addColorStop(0, '#2e1026');
-    bgGradient.addColorStop(0.5, '#831843');
-    bgGradient.addColorStop(1, '#2e1026');
+    // Rich crimson/magenta spotlight
+    bgGradient.addColorStop(0, '#9d174d'); 
+    bgGradient.addColorStop(0.4, '#4a044e'); 
+    bgGradient.addColorStop(1, '#170213'); 
   } else {
-    // Dark + random color accents (Purple/Teal) for others
-    bgGradient.addColorStop(0, '#171717');
-    bgGradient.addColorStop(0.5, '#4c1d95');
-    bgGradient.addColorStop(1, '#0f766e');
+    // Vibrant violet/teal spotlight mix
+    bgGradient.addColorStop(0, '#6d28d9'); 
+    bgGradient.addColorStop(0.5, '#0f766e'); 
+    bgGradient.addColorStop(1, '#09090b'); 
   }
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, W, H);
 
-  // 2. STADIUM LIGHTS / RAYS EFFECT
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+  // 2. STADIUM LIGHTS / RAYS EFFECT (Volumetric lighting)
+  // Rays now fade realistically into the background instead of being solid color blocks
+  const rayGradient = ctx.createLinearGradient(W / 2, -200, W / 2, H * 0.8);
+  rayGradient.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
+  rayGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = rayGradient;
+  
   for (let i = 0; i < 7; i++) {
     ctx.beginPath();
     ctx.moveTo(W / 2, -200); // Ray origin 
@@ -87,14 +94,22 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
     ctx.fill();
   }
   
-  // Flash photography dots in background
+  // Flash photography dots (Modern Bokeh effect)
   for (let i = 0; i < 200; i++) {
     const x = Math.random() * W;
     const y = Math.random() * H * 0.8; 
-    const r = Math.random() * 2.5;
+    const r = Math.random() * 3.5 + 0.5; // Slightly varied radius for depth
+    const alpha = Math.random() * 0.6 + 0.1;
+
+    // Radial gradient creates a glowing, out-of-focus camera lens effect
+    const bokehGrad = ctx.createRadialGradient(x, y, 0, x, y, r);
+    bokehGrad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+    bokehGrad.addColorStop(0.4, `rgba(255, 255, 255, ${alpha * 0.5})`);
+    bokehGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.6})`;
+    ctx.fillStyle = bokehGrad;
     ctx.fill();
   }
 
@@ -110,13 +125,13 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   }
 
   if (logoImg) {
-    const logoMaxHeight = 120; // Larger logo
+    const logoMaxHeight = 120; 
     const logoScale = logoMaxHeight / logoImg.height;
     const logoW = logoImg.width * logoScale;
     const logoH = logoImg.height * logoScale;
     
     ctx.save();
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.6)'; // Contrast glow
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.4)'; // Slightly softer, more realistic glow
     ctx.shadowBlur = 25;
     ctx.shadowOffsetY = 5;
     ctx.drawImage(logoImg, 40, 40, logoW, logoH);
@@ -136,9 +151,9 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   // 3. HEADER TITLES
   ctx.textBaseline = 'top';
   ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 4;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'; // Deepened shadow to match rich background
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 6;
 
   // Name (Dynamic Font Size)
   ctx.fillStyle = '#ffffff';
@@ -161,8 +176,8 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.fillText(titleLine2, W / 2, 230);
 
   // "R Shivakumar Foundation"
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 4;
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetY = 5;
   ctx.font = '900 65px "Inter", "Arial Black", sans-serif';
   ctx.fillText(titleLine3, W / 2, 290);
   
@@ -176,14 +191,14 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#ffffff';
   ctx.font = '900 28px "Inter", "Arial Black", sans-serif';
-  ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-  ctx.shadowBlur = 15;
+  ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
+  ctx.shadowBlur = 20;
   ctx.shadowOffsetY = 0;
   const formattedEventTop = eventName.replace(/\n/g, ' '); 
   ctx.fillText(formattedEventTop, W - 40, 40);
   ctx.restore();
 
-  // 5. CENTER IMAGE FRAME (Glassmorphic)
+  // 5. CENTER IMAGE FRAME (Premium Glassmorphic Edge)
   const frameX = 140;
   const frameY = 400;
   const frameW = 800;
@@ -192,15 +207,25 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
 
   // Draw Glassmorphic border/shadow base
   ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-  ctx.shadowBlur = 35;
-  ctx.shadowOffsetY = 15;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; // Darker ambient occlusion shadow
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 20;
   roundRect(ctx, frameX, frameY, frameW, frameH, frameR);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // Glass fill
+  
+  // Subtly graduated glass fill to simulate volumetric depth
+  const glassFillGrad = ctx.createLinearGradient(frameX, frameY, frameX, frameY + frameH);
+  glassFillGrad.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+  glassFillGrad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+  ctx.fillStyle = glassFillGrad;
   ctx.fill();
   
+  // Premium diagonal specular highlight stroke
   ctx.lineWidth = 4;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; // Glass border
+  const glassStrokeGrad = ctx.createLinearGradient(frameX, frameY, frameX + frameW, frameY + frameH);
+  glassStrokeGrad.addColorStop(0, 'rgba(255, 255, 255, 0.6)'); // Top left light catch
+  glassStrokeGrad.addColorStop(0.4, 'rgba(255, 255, 255, 0.05)'); // Middle transparent
+  glassStrokeGrad.addColorStop(1, 'rgba(255, 255, 255, 0.3)'); // Bottom right light reflection
+  ctx.strokeStyle = glassStrokeGrad; 
   ctx.stroke();
   ctx.restore();
 
@@ -217,8 +242,8 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
 
   // Inner background gradient (Visible if image is a transparent cutout)
   const innerGrad = ctx.createLinearGradient(innerX, innerY, innerX, innerY + innerH);
-  innerGrad.addColorStop(0, 'rgba(255, 255, 255, 0.2)'); 
-  innerGrad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+  innerGrad.addColorStop(0, 'rgba(255, 255, 255, 0.25)'); 
+  innerGrad.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
   ctx.fillStyle = innerGrad;
   ctx.fillRect(innerX, innerY, innerW, innerH);
 
@@ -240,28 +265,26 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
 
   // Draw Badge overlapping the bottom right of the frame
   if (badgeImg) {
-    const badgeScale = 320 / badgeImg.width; // Larger badge
+    const badgeScale = 320 / badgeImg.width; 
     const badgeW = badgeImg.width * badgeScale;
     const badgeH = badgeImg.height * badgeScale;
-    const badgeX = innerX + innerW - badgeW / 2; // overlapping right edge
-    const badgeY = innerY + innerH - badgeH / 2 - 20; // overlapping bottom edge
+    const badgeX = innerX + innerW - badgeW / 2; 
+    const badgeY = innerY + innerH - badgeH / 2 - 20; 
     
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 25;
-    ctx.shadowOffsetY = 10;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)'; // Stronger drop shadow for pop
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 15;
     ctx.drawImage(badgeImg, badgeX, badgeY, badgeW, badgeH);
     ctx.restore();
   }
 
   // 6. INNER FRAME TEXT & STATS (Drawn over the image)
   // Text Shadow to ensure legibility over any photo
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 3;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.7)'; // Slightly stronger shadow over varied pictures
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
   ctx.fillStyle = '#ffffff';
-
-  // Left Side: Match Details (Moved to top left)
 
   // Right Side: Big Stat Value
   ctx.textAlign = 'right';
@@ -277,18 +300,6 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0; // Turn off shadows for bottom elements
-
-  // // 7. BOTTOM LEFT ASSETS
-  // // Decorative lines "/////"
-  // ctx.fillStyle = '#111111';
-  // for (let i = 0; i < 5; i++) {
-  //   ctx.beginPath();
-  //   ctx.moveTo(80 + i * 22, 1120);
-  //   ctx.lineTo(95 + i * 22, 1120);
-  //   ctx.lineTo(85 + i * 22, 1150);
-  //   ctx.lineTo(70 + i * 22, 1150);
-  //   ctx.fill();
-  // }
 
   // Footer Message
   ctx.textAlign = 'left';
@@ -308,8 +319,8 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.textAlign = 'center';
   ctx.font = '900 36px "Inter", "Arial Black", sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-  ctx.shadowBlur = 15;
+  ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
+  ctx.shadowBlur = 20;
   ctx.shadowOffsetY = 0;
   ctx.fillText((data.archetype || 'Explorer').toUpperCase(), 940, 1280);
 
