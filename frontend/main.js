@@ -55,6 +55,39 @@ appSocket.on('departments_update', (departments) => {
   }
 });
 
+appSocket.on('status', (data) => {
+  statusMsg.innerText = data.message;
+  if (data.status === 'success') {
+    successTitle.innerText = 'Success!';
+    loadingSpinner.classList.add('hidden');
+    startSuccessTimer(5);
+  } else if (data.status === 'error') {
+    successTitle.innerText = 'Error';
+    loadingSpinner.classList.add('hidden');
+    startSuccessTimer(5);
+  }
+});
+
+appSocket.on('whatsapp_failed', (data) => {
+  statusMsg.innerText    = data.message;
+  successTitle.innerText = 'Your Badge is Ready!';
+  loadingSpinner.classList.add('hidden');
+
+  // Show QR container first
+  qrContainer.classList.remove('hidden');
+  qrContainer.classList.add('flex');
+
+  // Generate and show identity art above QR
+  generateAndShowArt();
+
+  // Render QR code
+  QRCode.toCanvas(qrCanvas, data.downloadUrl, { width: 200, margin: 2 }, function (error) {
+    if (error) console.error(error);
+  });
+
+  startSuccessTimer(60);
+});
+
 const KIOSK_ID = (import.meta.env && import.meta.env.VITE_KIOSK_ID) 
   ? import.meta.env.VITE_KIOSK_ID 
   : 'web-kiosk-1';
@@ -934,47 +967,8 @@ async function submitData() {
 
     const resData = await response.json();
 
-    const socket = io(BACKEND_URL, { transports: ['websocket'] });
-
-    socket.on('connect', () => {
-      socket.emit('join_room', resData.roomId);
-    });
-
-    socket.on('status', (data) => {
-      statusMsg.innerText = data.message;
-      if (data.status === 'success') {
-        successTitle.innerText = 'Success!';
-        loadingSpinner.classList.add('hidden');
-        socket.disconnect();
-        startSuccessTimer(5);
-      } else if (data.status === 'error') {
-        successTitle.innerText = 'Error';
-        loadingSpinner.classList.add('hidden');
-        socket.disconnect();
-        startSuccessTimer(5);
-      }
-    });
-
-    socket.on('whatsapp_failed', (data) => {
-      statusMsg.innerText    = data.message;
-      successTitle.innerText = 'Your Badge is Ready!';
-      loadingSpinner.classList.add('hidden');
-
-      // Show QR container first
-      qrContainer.classList.remove('hidden');
-      qrContainer.classList.add('flex');
-
-      // Generate and show identity art above QR
-      generateAndShowArt();
-
-      // Render QR code
-      QRCode.toCanvas(qrCanvas, data.downloadUrl, { width: 200, margin: 2 }, function (error) {
-        if (error) console.error(error);
-      });
-
-      socket.disconnect();
-      startSuccessTimer(60);
-    });
+    const socket = appSocket;
+    socket.emit('join_room', resData.roomId);
 
   } catch (err) {
     console.error('Submission failed:', err);
