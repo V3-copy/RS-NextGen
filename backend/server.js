@@ -36,6 +36,18 @@ const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD || undefined;
 const REDIS_DB = process.env.REDIS_DB ? parseInt(process.env.REDIS_DB) : 0;
 
+const { createAdapter } = require('@socket.io/redis-adapter');
+
+const pubClient = new Redis({
+  host: REDIS_HOST,
+  port: REDIS_PORT,
+  password: REDIS_PASSWORD,
+  db: REDIS_DB
+});
+const subClient = pubClient.duplicate();
+
+io.adapter(createAdapter(pubClient, subClient));
+
 const minioClient = new MinioClient({
   endPoint: process.env.MINIO_ENDPOINT || '127.0.0.1',
   port: parseInt(process.env.MINIO_PORT || '9000'),
@@ -173,7 +185,8 @@ const verifyAdmin = (req, res, next) => {
 
 async function getMetricsData() {
   const totalUsers = await User.countDocuments();
-  const totalKiosks = io.engine.clientsCount;
+  const sockets = await io.fetchSockets();
+  const totalKiosks = sockets.length;
   const deptCounts = await User.aggregate([{ $group: { _id: "$course", count: { $sum: 1 } } }]);
   const genderCounts = await User.aggregate([{ $group: { _id: "$gender", count: { $sum: 1 } } }]);
   return { totalUsers, totalKiosks, departments: deptCounts, genders: genderCounts };
