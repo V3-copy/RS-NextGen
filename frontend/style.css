@@ -1387,3 +1387,11 @@ h1, h2, h3 {
 .scale-95 { transform: scale(0.95) !important; }
 .scale-100 { transform: scale(1) !important; }
 .translate-y-full { transform: translateY(100%) !important; }
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

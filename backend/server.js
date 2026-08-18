@@ -257,42 +257,48 @@ app.get('/api/admin/users', verifyAdmin, async (req, res) => {
   }
 });
 
+// --- BACKUP ZIP GENERATOR ---
+function createBackupZip(outputStream) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const users = await User.find();
+      let csv = 'ID,Name,Course,Year,WhatsApp,Email,Gender,Archetype,Date,ImagePath\n';
+      users.forEach(u => {
+        const img = u.imageUrl ? `images/${u.imageUrl}` : '';
+        csv += `"${u._id}","${u.name}","${u.course}","${u.year}","${u.whatsappNumber}","${u.email || ''}","${u.gender}","${u.archetype}","${u.createdAt}","${img}"\n`;
+      });
+
+      const archive = archiver('zip', { zlib: { level: 9 } });
+      archive.on('error', err => reject(err));
+      
+      outputStream.on('close', () => resolve());
+      outputStream.on('finish', () => resolve());
+
+      archive.pipe(outputStream);
+      archive.append(csv, { name: 'users.csv' });
+
+      for (const u of users) {
+        if (u.imageUrl) {
+          try {
+            const imgStream = await minioClient.getObject(BUCKET_NAME, u.imageUrl);
+            archive.append(imgStream, { name: `images/${u.imageUrl}` });
+          } catch (minioErr) {
+            console.error(`Failed to fetch image ${u.imageUrl} for zip:`, minioErr);
+          }
+        }
+      }
+      archive.finalize();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 // --- BACKUP DATA (ZIP + CSV) ---
 app.get('/api/admin/backup', verifyAdmin, async (req, res) => {
   try {
-    const users = await User.find();
-    
-    // Create CSV content manually
-    let csv = 'ID,Name,Course,Year,WhatsApp,Email,Gender,Archetype,Date,ImagePath\n';
-    users.forEach(u => {
-      const img = u.imageUrl ? `images/${u.imageUrl}` : '';
-      csv += `"${u._id}","${u.name}","${u.course}","${u.year}","${u.whatsappNumber}","${u.email || ''}","${u.gender}","${u.archetype}","${u.createdAt}","${img}"\n`;
-    });
-
     res.attachment('srm_backup.zip');
-    const archive = archiver('zip', { zlib: { level: 9 } });
-
-    archive.on('error', (err) => {
-      console.error('Archive Error:', err);
-      if (!res.headersSent) res.status(500).send({ error: err.message });
-    });
-
-    archive.pipe(res);
-    archive.append(csv, { name: 'users.csv' });
-
-    // Stream images from MinIO into the archive
-    for (const u of users) {
-      if (u.imageUrl) {
-        try {
-          const imgStream = await minioClient.getObject(BUCKET_NAME, u.imageUrl);
-          archive.append(imgStream, { name: `images/${u.imageUrl}` });
-        } catch (minioErr) {
-          console.error(`Failed to fetch image ${u.imageUrl} for zip:`, minioErr);
-        }
-      }
-    }
-
-    await archive.finalize();
+    await createBackupZip(res);
   } catch (err) {
     console.error('Backup error:', err);
     if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
@@ -302,9 +308,19 @@ app.get('/api/admin/backup', verifyAdmin, async (req, res) => {
 // --- RESET DATABASE ---
 app.delete('/api/admin/reset', verifyAdmin, async (req, res) => {
   try {
+    const backupsDir = path.join(__dirname, 'backups');
+    if (!fs.existsSync(backupsDir)) {
+      fs.mkdirSync(backupsDir);
+    }
+    const backupFile = path.join(backupsDir, `srm_backup_${Math.floor(Date.now() / 1000)}.zip`);
+    const stream = fs.createWriteStream(backupFile);
+    
+    await createBackupZip(stream);
+    console.log(`Pre-reset backup created at ${backupFile}`);
+
     await User.deleteMany({});
     broadcastMetrics();
-    res.json({ success: true, message: 'Database cleared' });
+    res.json({ success: true, message: 'Database cleared, backup created on server.' });
   } catch (err) {
     console.error('Reset error:', err);
     res.status(500).json({ error: 'Internal server error' });
