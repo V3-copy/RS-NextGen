@@ -1,26 +1,26 @@
 module.exports = {
   apps: [
     {
-      name: 'api-server',
-      script: './server.js',
-      instances: 1,
-      exec_mode: 'fork',
+      name: 'srm-api-server',
+      script: 'server.js',
+      // Using 2 instances for API Server
+      instances: 2, 
+      exec_mode: 'cluster', 
+      // Restart if memory exceeds 2.5GB per instance
+      max_memory_restart: '2500M',
       env: {
-        NODE_ENV: 'development',
-      },
-      env_production: {
         NODE_ENV: 'production',
       }
     },
     {
-      name: 'worker',
-      script: './worker.js',
+      name: 'srm-canvas-worker',
+      script: 'worker.js',
+      // Using 1 instance for the heavy canvas generation worker
       instances: 1,
-      exec_mode: 'fork',
+      exec_mode: 'cluster',
+      // Restart if memory exceeds 2GB
+      max_memory_restart: '2G',
       env: {
-        NODE_ENV: 'development',
-      },
-      env_production: {
         NODE_ENV: 'production',
       }
     }
