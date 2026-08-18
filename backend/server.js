@@ -94,8 +94,13 @@ mongoose.connect(MONGO_URI, mongoOptions)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // --- WEBSOCKETS ---
+const APP_VERSION = process.env.APP_VERSION || '1.0.0';
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
+  
+  // Send current version to the client for auto-updates
+  socket.emit('version_check', { version: APP_VERSION });
   
   socket.on('join_room', (roomId) => {
     socket.join(roomId);

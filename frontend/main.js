@@ -8,6 +8,17 @@ const BACKEND_URL = (import.meta.env && typeof import.meta.env.VITE_BACKEND_URL 
   : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
       ? 'http://localhost:3001' 
       : `http://${window.location.hostname}:3001`);
+
+const APP_VERSION = '1.0.0';
+
+// Global Socket for App Updates
+const appSocket = io(BACKEND_URL);
+appSocket.on('version_check', (data) => {
+  if (data.version && data.version !== APP_VERSION) {
+    console.log('New version detected! Reloading app...');
+    window.location.reload(true);
+  }
+});
 const KIOSK_ID = (import.meta.env && import.meta.env.VITE_KIOSK_ID) 
   ? import.meta.env.VITE_KIOSK_ID 
   : 'web-kiosk-1';
@@ -643,6 +654,13 @@ async function submitData() {
     const resData = await response.json();
 
     const socket = io(BACKEND_URL);
+
+    socket.on('version_check', (data) => {
+      if (data.version && data.version !== APP_VERSION) {
+        console.log('New version detected, refreshing app...');
+        window.location.reload(true);
+      }
+    });
 
     socket.on('connect', () => {
       socket.emit('join_room', resData.roomId);
