@@ -325,6 +325,7 @@ function resetApp() {
   if (inputCourse)   inputCourse.value = '';
   if (inputYear)     inputYear.value = '1';
   if (inputWhatsApp) inputWhatsApp.value = '';
+  if (inputEmail)    inputEmail.value = '';
   validateForm();
 
   stopCamera();
@@ -473,13 +474,17 @@ function validateForm() {
   const isNameValid   = inputName     ? inputName.value.trim().length > 0 : false;
   const isCourseValid = inputCourse   ? inputCourse.value.trim().length > 0 : false;
   const isPhoneValid  = inputWhatsApp ? inputWhatsApp.value.replace(/\D/g, '').length === 10 : false;
-  if (btnNext) btnNext.disabled = !(isNameValid && isCourseValid && isPhoneValid);
+  const emailRegex    = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const isEmailValid  = inputEmail    ? emailRegex.test(inputEmail.value.trim()) : false;
+
+  if (btnNext) btnNext.disabled = !(isNameValid && isCourseValid && isPhoneValid && isEmailValid);
 }
 
 if (inputName)     inputName.addEventListener('input', validateForm);
 if (inputCourse)   inputCourse.addEventListener('change', validateForm);
 if (inputYear)     inputYear.addEventListener('change', validateForm);
 if (inputWhatsApp) inputWhatsApp.addEventListener('input', validateForm);
+if (inputEmail)    inputEmail.addEventListener('input', validateForm);
 
 if (form) {
   form.addEventListener('submit', (e) => {
