@@ -99,7 +99,7 @@ mongoose.connect(MONGO_URI, mongoOptions)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // --- WEBSOCKETS ---
-const APP_VERSION = process.env.APP_VERSION || '1.0.5';
+const APP_VERSION = process.env.APP_VERSION || '1.0.7';
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
@@ -210,7 +210,7 @@ app.get('/api/kiosk/recent-images', async (req, res) => {
 // --- CANVAS PREVIEW ENDPOINT ---
 app.post('/api/generate-canvas', upload.single('image'), async (req, res) => {
   try {
-    const { name, year, archetype, answers } = req.body;
+    const { name, course, year, gender, archetype, answers } = req.body;
     let userImageBuffer = req.file ? req.file.buffer : null;
 
     let parsedAnswers = [];
@@ -218,7 +218,7 @@ app.post('/api/generate-canvas', upload.single('image'), async (req, res) => {
       parsedAnswers = answers ? JSON.parse(answers) : [];
     } catch (e) { }
 
-    const bodyForCanvas = { name, year, archetype, answers: parsedAnswers };
+    const bodyForCanvas = { name, course, year, gender, archetype, answers: parsedAnswers };
 
     const canvas = await generateSportsCanvas(bodyForCanvas, userImageBuffer);
     res.json({ success: true, canvasDataUrl: canvas.toDataURL('image/png') });

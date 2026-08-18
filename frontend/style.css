@@ -117,6 +117,7 @@ input, textarea {
   justify-content: center;
   opacity: 0;
   visibility: hidden;
+  z-index: 6;
   transition: opacity 0.4s ease, visibility 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   transform: scale(0.95);
 }
@@ -524,10 +525,12 @@ h1, h2, h3 {
   }
 }
 
-/* Archetype Cards */
+/* Archetype Cards — uniform glass style */
 .card {
-  background: rgba(26, 27, 38, 0.6);
-  border: 1px solid var(--glass-border);
+  background: rgba(15, 20, 40, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 24px 16px;
   cursor: pointer;
@@ -537,13 +540,14 @@ h1, h2, h3 {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .card:hover {
-  background: rgba(76, 110, 245, 0.1);
-  border-color: var(--accent);
+  background: rgba(76, 110, 245, 0.15);
+  border-color: rgba(76, 110, 245, 0.5);
   transform: translateY(-4px);
-  box-shadow: 0 10px 30px -10px rgba(76, 110, 245, 0.3);
+  box-shadow: 0 16px 40px -8px rgba(76, 110, 245, 0.3);
 }
 
 .card h3 {
@@ -608,12 +612,14 @@ h1, h2, h3 {
   aspect-ratio: 4 / 5;
   border-radius: 24px;
   overflow: hidden;
+  isolation: isolate;
   box-shadow:
     0 0 0 2px rgba(229, 168, 35, 0.5),
     0 0 40px rgba(229, 168, 35, 0.15),
     0 40px 80px rgba(0, 0, 0, 0.6);
   background: #000;
   flex-shrink: 0;
+  z-index: 2;
 }
 
 .camera-video-feed {
@@ -1146,9 +1152,38 @@ h1, h2, h3 {
   z-index: 5;
   overflow: hidden;
   opacity: 0.15; /* Subtle background for inner screens */
-  transition: opacity 1s ease, transform 1s ease, width 1s ease;
+  transition: opacity 1s ease, width 1s ease, mask-image 1s ease;
   pointer-events: none;
 }
+
+/* Full-screen driftwall on all non-welcome screens */
+.driftwall-container.wall-fullscreen {
+  opacity: 0.4;
+  width: 100vw;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.driftwall-container.wall-fullscreen .driftwall-columns {
+  width: 130%;
+  transform: rotate(-6deg) scale(1.08) translateY(-6%);
+}
+
+.driftwall-container.wall-fullscreen .drift-column {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+/* Dark vignette overlay so content panels stay readable over the wall */
+.driftwall-container.wall-fullscreen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(4, 13, 26, 0.35) 0%, rgba(4, 13, 26, 0.7) 100%);
+  pointer-events: none;
+}
+
 
 /* Split-screen layout adjustments */
 .app-container.split-active #screen-welcome .glass-panel {

@@ -8,7 +8,7 @@ const BACKEND_URL = (import.meta.env && typeof import.meta.env.VITE_BACKEND_URL 
   : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
       ? 'http://localhost:3001' 
       : `http://${window.location.hostname}:3001`);
-const APP_VERSION = '1.0.5';
+const APP_VERSION = '1.0.7';
 
 // Global Socket for App Updates
 const appSocket = io(BACKEND_URL);
@@ -196,24 +196,26 @@ function switchScreen(screenName) {
     screens[screenName].classList.add('active');
   }
   
+  const appEl = document.getElementById('app');
   const driftwallContainer = document.getElementById('driftwall-container');
+
   if (driftwallContainer) {
     if (screenName === 'welcome') {
       driftwallContainer.classList.add('active-on-welcome');
+      driftwallContainer.classList.remove('wall-fullscreen');
+    } else if (screenName === 'login') {
+      driftwallContainer.classList.remove('active-on-welcome');
+      driftwallContainer.classList.remove('wall-fullscreen');
     } else {
       driftwallContainer.classList.remove('active-on-welcome');
+      driftwallContainer.classList.add('wall-fullscreen');
     }
   }
 
   const bgEffects = document.querySelector('.bg-effects');
   if (bgEffects) {
-    if (screenName === 'camera') {
-      bgEffects.style.display = 'none';
-      document.body.style.backgroundColor = '#000000'; // Pure black for camera
-    } else {
-      bgEffects.style.display = 'block';
-      document.body.style.backgroundColor = 'var(--bg-color)';
-    }
+    bgEffects.style.display = 'block';
+    document.body.style.backgroundColor = 'var(--bg-color)';
   }
 
   handleInteraction();
@@ -802,7 +804,9 @@ async function generateAndShowArt() {
   try {
     const formData = new FormData();
     formData.append('name', state.name);
+    formData.append('course', state.course);
     formData.append('year', state.year);
+    formData.append('gender', state.gender);
     formData.append('archetype', state.archetype);
     formData.append('answers', JSON.stringify(state.answers));
     if (state.imageBlob) {
