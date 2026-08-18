@@ -1,0 +1,44 @@
+name: "deploy:RS-NextGen"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: deploy-to-vps
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy RS-NextGen app
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: velotriz
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            cd /opt/apps/RS-NextGen
+            
+            # NOTE: Ensure the 'velotriz' user owns /opt/apps/RS-NextGen on the VPS:
+            # sudo chown -R velotriz:velotriz /opt/apps/RS-NextGen
+            # Also ensure 'velotriz' is in the 'docker' group:
+            # sudo usermod -aG docker velotriz
+            
+            # Resolve potential git ownership issues
+            git config --global --add safe.directory /opt/apps/RS-NextGen
+            
+            # Fetch and reset without sudo (assuming ownership is fixed)
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Ensure .env exists to prevent docker compose build errors
+            touch backend/.env
+            touch frontend/.env
+            
+            # Zero-downtime deployment: build new images first, apply them, then clean up old dangling images
+            docker compose build
+            docker compose up -d --remove-orphans
+            docker builder prune -f

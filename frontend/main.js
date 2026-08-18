@@ -110,7 +110,12 @@ function handleInteraction() {
 
 // ─── Long Press Reset ────────────────────────────────────────────────────────
 let longPressTimer = null;
-document.body.addEventListener('pointerdown', () => {
+let pressStartX = 0;
+let pressStartY = 0;
+
+document.body.addEventListener('pointerdown', (e) => {
+  pressStartX = e.clientX;
+  pressStartY = e.clientY;
   longPressTimer = setTimeout(() => {
     const activeScreen = document.querySelector('.screen.active');
     if (activeScreen && activeScreen.id === 'screen-success') {
@@ -120,8 +125,22 @@ document.body.addEventListener('pointerdown', () => {
     }
   }, 2000);
 });
+
 document.body.addEventListener('pointerup', () => clearTimeout(longPressTimer));
-document.body.addEventListener('pointermove', () => clearTimeout(longPressTimer));
+document.body.addEventListener('pointercancel', () => clearTimeout(longPressTimer));
+document.body.addEventListener('pointerleave', () => clearTimeout(longPressTimer));
+
+document.body.addEventListener('pointermove', (e) => {
+  if (longPressTimer) {
+    const diffX = Math.abs(e.clientX - pressStartX);
+    const diffY = Math.abs(e.clientY - pressStartY);
+    // Only cancel if the pointer moved significantly (e.g., scrolling or dragging)
+    if (diffX > 15 || diffY > 15) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
+});
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
 function switchScreen(screenName) {
