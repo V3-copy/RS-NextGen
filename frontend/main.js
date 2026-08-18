@@ -100,6 +100,14 @@ const inputWhatsApp = document.getElementById('whatsapp');
 const inputEmail    = document.getElementById('email');
 const btnNext       = document.getElementById('btn-next');
 
+if (inputCourse) {
+  inputCourse.addEventListener('focus', () => {
+    if (inputCourse.options.length <= 1) {
+      appSocket.emit('request_departments');
+    }
+  });
+}
+
 // Gender
 const genderCards = document.querySelectorAll('.gender-card');
 

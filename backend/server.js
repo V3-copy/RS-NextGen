@@ -132,6 +132,10 @@ io.on('connection', (socket) => {
   // Send current departments list
   socket.emit('departments_update', cachedDepartments);
 
+  socket.on('request_departments', () => {
+    socket.emit('departments_update', cachedDepartments);
+  });
+
   socket.on('join_room', (roomId) => {
     socket.join(roomId);
     console.log(`Socket ${socket.id} joined room ${roomId}`);
