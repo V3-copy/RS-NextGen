@@ -685,3 +685,27 @@ async function submitData() {
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 resetApp();
+
+// ─── PWA iOS Install Prompt ───────────────────────────────────────────────────
+const isIos = () => {
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+const isInStandaloneMode = () => ('standalone' in window.navigator) && window.navigator.standalone;
+
+if (isIos() && !isInStandaloneMode()) {
+  const pwaPrompt = document.getElementById('ios-pwa-prompt');
+  const closePwaPrompt = document.getElementById('btn-close-pwa-prompt');
+  if (pwaPrompt) {
+    pwaPrompt.classList.remove('hidden');
+    // small delay to allow display block to take effect before animating
+    setTimeout(() => pwaPrompt.classList.remove('translate-y-full', 'opacity-0'), 100);
+    
+    if (closePwaPrompt) {
+      closePwaPrompt.addEventListener('click', () => {
+        pwaPrompt.classList.add('translate-y-full', 'opacity-0');
+        setTimeout(() => pwaPrompt.classList.add('hidden'), 300);
+      });
+    }
+  }
+}
