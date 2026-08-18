@@ -169,20 +169,43 @@
 
     <!-- DEPARTMENTS TAB -->
     <div id="tab-departments" class="tab-content">
-      <div class="max-w-2xl bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 class="text-xl font-bold text-gray-800 mb-6">Manage Departments</h2>
-        
-        <div class="flex gap-3 mb-6">
-          <input type="text" id="new-dept" placeholder="New Department Name" class="border border-gray-200 bg-gray-50 p-2.5 flex-grow rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-sm" />
-          <button id="add-btn" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 shadow-sm font-medium transition-colors">Add</button>
+      <div class="flex flex-col lg:flex-row gap-6 max-w-6xl">
+        <div class="flex-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800">Manage Departments</h2>
+            <div class="flex gap-2">
+              <button id="delete-selected-btn" class="hidden text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded text-sm font-medium transition-colors border border-red-200">Delete Selected</button>
+              <button id="clear-all-btn" class="text-gray-500 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded text-sm font-medium transition-colors border border-gray-200 hover:border-red-200">Clear All</button>
+            </div>
+          </div>
+          
+          <div class="flex gap-3 mb-6">
+            <input type="text" id="new-dept" placeholder="New Department Name" class="border border-gray-200 bg-gray-50 p-2.5 flex-grow rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-sm" />
+            <button id="add-btn" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 shadow-sm font-medium transition-colors">Add</button>
+          </div>
+
+          <div class="flex items-center gap-3 px-3 pb-2 mb-2 border-b border-gray-100">
+            <input type="checkbox" id="select-all-depts" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
+            <label for="select-all-depts" class="text-sm font-medium text-gray-600 cursor-pointer select-none">Select All</label>
+          </div>
+          <ul id="dept-list" class="mb-6 border border-gray-100 rounded-lg divide-y max-h-96 overflow-y-auto shadow-inner bg-gray-50/30"></ul>
+
+          <button id="update-btn" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold py-3 rounded-lg hover:from-emerald-600 hover:to-emerald-700 shadow-sm transition-all">
+            Deploy Updates to Kiosks
+          </button>
+          <p id="status-msg" class="text-center text-sm mt-3 text-gray-600 font-medium"></p>
         </div>
 
-        <ul id="dept-list" class="mb-6 border border-gray-100 rounded-lg divide-y max-h-96 overflow-y-auto shadow-inner bg-gray-50/30"></ul>
-
-        <button id="update-btn" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold py-3 rounded-lg hover:from-emerald-600 hover:to-emerald-700 shadow-sm transition-all">
-          Deploy Updates to Kiosks
-        </button>
-        <p id="status-msg" class="text-center text-sm mt-3 text-gray-600 font-medium"></p>
+        <div class="w-full lg:w-96 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
+          <h2 class="text-xl font-bold text-gray-800 mb-2">Bulk Import</h2>
+          <p class="text-sm text-gray-500 mb-4">Paste multiple departments separated by commas or newlines.</p>
+          
+          <textarea id="bulk-dept-input" rows="8" class="w-full border border-gray-200 bg-gray-50 p-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-sm mb-4" placeholder="e.g.&#10;Computer Science&#10;Information Technology, Electronics"></textarea>
+          
+          <button id="bulk-add-btn" class="w-full bg-indigo-600 text-white font-medium py-2.5 rounded-lg hover:bg-indigo-700 shadow-sm transition-all">
+            Import Departments
+          </button>
+        </div>
       </div>
     </div>
 
@@ -402,17 +425,80 @@
     function renderDeptList() {
       const listEl = document.getElementById('dept-list');
       listEl.innerHTML = '';
+      
+      const selectAllCheckbox = document.getElementById('select-all-depts');
+      selectAllCheckbox.checked = false;
+      toggleDeleteSelectedBtn();
+
       if (departments.length === 0) {
         listEl.innerHTML = '<li class="p-3 text-gray-500 text-center">No departments found.</li>';
+        selectAllCheckbox.disabled = true;
         return;
       }
+
+      selectAllCheckbox.disabled = false;
       departments.forEach((dept, index) => {
         const li = document.createElement('li');
         li.className = 'flex justify-between items-center p-3 hover:bg-gray-50';
-        li.innerHTML = `<span>${dept}</span><button class="text-red-500 hover:text-red-700 text-sm font-medium" onclick="removeDept(${index})">Remove</button>`;
+        li.innerHTML = `
+          <div class="flex items-center gap-3">
+            <input type="checkbox" class="dept-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" data-index="${index}" onchange="toggleDeleteSelectedBtn()">
+            <span class="text-gray-700">${dept}</span>
+          </div>
+          <button class="text-red-500 hover:text-red-700 text-sm font-medium" onclick="removeDept(${index})">Remove</button>`;
         listEl.appendChild(li);
       });
     }
+
+    function toggleDeleteSelectedBtn() {
+      const checkboxes = document.querySelectorAll('.dept-checkbox');
+      const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked) && checkboxes.length > 0;
+      
+      document.getElementById('delete-selected-btn').classList.toggle('hidden', !anyChecked);
+      document.getElementById('select-all-depts').checked = allChecked;
+    }
+
+    document.getElementById('select-all-depts').addEventListener('change', (e) => {
+      const checkboxes = document.querySelectorAll('.dept-checkbox');
+      checkboxes.forEach(cb => cb.checked = e.target.checked);
+      toggleDeleteSelectedBtn();
+    });
+
+    document.getElementById('delete-selected-btn').onclick = () => {
+      const checkboxes = document.querySelectorAll('.dept-checkbox');
+      const indicesToRemove = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => parseInt(cb.dataset.index))
+        .sort((a, b) => b - a); // sort descending to avoid index shifting issues
+        
+      if (indicesToRemove.length > 0) {
+        indicesToRemove.forEach(index => {
+          departments.splice(index, 1);
+        });
+        renderDeptList();
+      }
+    };
+
+    document.getElementById('clear-all-btn').onclick = () => {
+      if (confirm("Are you sure you want to clear all departments? You must 'Deploy Updates' to save this change.")) {
+        departments = [];
+        renderDeptList();
+      }
+    };
+
+    document.getElementById('bulk-add-btn').onclick = () => {
+      const input = document.getElementById('bulk-dept-input');
+      const val = input.value;
+      if (!val.trim()) return;
+      
+      const newDepts = val.split(/[\n,]+/).map(d => d.trim()).filter(d => d && !departments.includes(d));
+      if (newDepts.length > 0) {
+        departments.push(...newDepts);
+        input.value = '';
+        renderDeptList();
+      }
+    };
 
     function populateDeptFilter() {
       const select = document.getElementById('filter-dept');
