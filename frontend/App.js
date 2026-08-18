@@ -6,9 +6,13 @@ import QRCode from 'react-native-qrcode-svg';
 import { Picker } from '@react-native-picker/picker';
 
 // Configuration
+// When deployed, point to same origin so Nginx proxies /socket.io/ to the backend.
 const BACKEND_URL = (typeof process !== 'undefined' && process.env && process.env.VITE_BACKEND_URL)
   ? process.env.VITE_BACKEND_URL
-  : 'http://localhost:3001';
+  : (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+      ? window.location.origin
+      : 'http://localhost:3001');
+
 const KIOSK_ID = (typeof process !== 'undefined' && process.env && process.env.VITE_KIOSK_ID)
   ? process.env.VITE_KIOSK_ID
   : 'ipad-kiosk-1';

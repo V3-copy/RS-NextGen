@@ -3,11 +3,13 @@ import { io } from 'socket.io-client';
 import QRCode from 'qrcode';
 
 // Configuration
+// When deployed, use same origin so Nginx proxies /socket.io/ to the backend.
+// On localhost, point directly at the backend port.
 const BACKEND_URL = (import.meta.env && typeof import.meta.env.VITE_BACKEND_URL !== 'undefined') 
   ? import.meta.env.VITE_BACKEND_URL 
   : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
       ? 'http://localhost:3001' 
-      : `http://${window.location.hostname}:3001`);
+      : window.location.origin);
 const APP_VERSION = '1.1.2';
 
 // Global Socket for App Updates
