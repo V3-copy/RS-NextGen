@@ -188,6 +188,17 @@ function switchScreen(screenName) {
     }
   }
 
+  const bgEffects = document.querySelector('.bg-effects');
+  if (bgEffects) {
+    if (screenName === 'camera') {
+      bgEffects.style.display = 'none';
+      document.body.style.backgroundColor = '#000000'; // Pure black for camera
+    } else {
+      bgEffects.style.display = 'block';
+      document.body.style.backgroundColor = 'var(--bg-color)';
+    }
+  }
+
   handleInteraction();
 }
 

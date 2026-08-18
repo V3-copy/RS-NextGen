@@ -30,9 +30,9 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   const ctx = canvas.getContext('2d');
 
   // Fallback defaults for dynamic data mapped to DB user object
-  const titleLine1 = (data.name || 'STUDENT').toUpperCase();
-  const titleLine2 = 'WELCOME TO';
-  const titleLine3 = 'SRMIST';
+  const titleLine1 = data.name || 'Student Name';
+  const titleLine2 = '- Welcome to -';
+  const titleLine3 = 'R Sivakumar Foundation';
   
   const matchDetails = `ARCHETYPE\n${(data.archetype || 'Explorer').toUpperCase()}`;
   
@@ -96,25 +96,21 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   }
 
   if (logoImg) {
-    const logoMaxHeight = 50;
+    const logoMaxHeight = 80;
     const logoScale = logoMaxHeight / logoImg.height;
     const logoW = logoImg.width * logoScale;
     const logoH = logoImg.height * logoScale;
-    ctx.drawImage(logoImg, W / 2 - logoW / 2, 10, logoW, logoH);
-  } else {
-    // Draw a neat Vector SRM Logo Placeholder
-    ctx.save();
-    ctx.translate(W / 2, 35);
-    ctx.beginPath();
-    ctx.arc(0, 0, 22, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fill();
-    ctx.font = '900 13px "Inter", "Arial Black", sans-serif';
-    ctx.fillStyle = '#000000';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('SRM', 0, 1);
-    ctx.restore();
+    ctx.drawImage(logoImg, 40, 40, logoW, logoH);
+  }
+
+  let badgeImg = null;
+  try {
+    const badgePath = path.join(__dirname, '../public/badge.png');
+    if (fs.existsSync(badgePath)) {
+      badgeImg = await loadImage(badgePath);
+    }
+  } catch (e) {
+    console.error('Failed to load badge image:', e.message);
   }
 
   // 3. HEADER TITLES
@@ -124,34 +120,22 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.shadowBlur = 10;
   ctx.shadowOffsetY = 4;
 
-  // "PLAYER"
+  // Name
   ctx.fillStyle = '#ffffff';
-  ctx.font = '900 120px "Inter", "Arial Black", sans-serif';
-  ctx.fillText(titleLine1, W / 2, 70);
+  ctx.font = '800 100px "Inter", sans-serif';
+  ctx.fillText(titleLine1, W / 2, 110);
 
-  // "OF THE" (with red decorative lines)
+  // "- Welcome to -"
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
-  ctx.font = '800 32px "Inter", "Arial Black", sans-serif';
-  const line2Width = ctx.measureText(titleLine2).width;
-  ctx.fillText(titleLine2, W / 2, 210);
+  ctx.font = '700 45px "Inter", sans-serif';
+  ctx.fillText(titleLine2, W / 2, 230);
 
-  ctx.strokeStyle = '#d32f2f'; // Red lines
-  ctx.lineWidth = 4;
-  ctx.beginPath(); // Left Line
-  ctx.moveTo(W / 2 - line2Width / 2 - 60, 226);
-  ctx.lineTo(W / 2 - line2Width / 2 - 20, 226);
-  ctx.stroke();
-  ctx.beginPath(); // Right Line
-  ctx.moveTo(W / 2 + line2Width / 2 + 20, 226);
-  ctx.lineTo(W / 2 + line2Width / 2 + 60, 226);
-  ctx.stroke();
-
-  // "TOURNAMENT"
-  ctx.shadowBlur = 15;
-  ctx.shadowOffsetY = 6;
-  ctx.font = '900 115px "Inter", "Arial Black", sans-serif';
-  ctx.fillText(titleLine3, W / 2, 260);
+  // "R Sivakumar Foundation"
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 4;
+  ctx.font = '900 65px "Inter", "Arial Black", sans-serif';
+  ctx.fillText(titleLine3, W / 2, 290);
   
   // Reset shadow for remaining elements
   ctx.shadowBlur = 0;
@@ -229,6 +213,26 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
     }
   }
   ctx.restore(); // Exit clip region so text draws clearly on top
+
+  // Draw Badge overlapping the bottom right of the frame
+  if (badgeImg) {
+    const badgeScale = 220 / badgeImg.width; // 220px width
+    const badgeW = badgeImg.width * badgeScale;
+    const badgeH = badgeImg.height * badgeScale;
+    const badgeX = innerX + innerW - badgeW / 2; // overlapping right edge
+    const badgeY = innerY + innerH - badgeH / 2 - 20; // overlapping bottom edge
+    
+    // Draw white background circle behind the badge to prevent bleed-through
+    ctx.save();
+    ctx.beginPath();
+    // Circle centered at the badge, radius slightly smaller than half width to hide edges
+    ctx.arc(badgeX + badgeW / 2, badgeY + badgeH / 2 - 10, badgeW / 2 - 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.restore();
+
+    ctx.drawImage(badgeImg, badgeX, badgeY, badgeW, badgeH);
+  }
 
   // 6. INNER FRAME TEXT & STATS (Drawn over the image)
   // Text Shadow to ensure legibility over any photo

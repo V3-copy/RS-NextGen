@@ -195,7 +195,7 @@ app.get('/api/kiosk/recent-images', async (req, res) => {
       name: user.name,
       course: user.course,
       archetype: user.archetype,
-      url: `/api/download/${user._id}`
+      url: `/api/download-raw/${user._id}`
     }));
 
     res.json({ success: true, count: images.length, images });
@@ -223,6 +223,54 @@ app.post('/api/generate-canvas', upload.single('image'), async (req, res) => {
   } catch (err) {
     console.error('[Canvas] Preview error:', err);
     res.status(500).json({ error: 'Generation failed', detail: err.message });
+  }
+});
+
+// --- DEV ONLY PREVIEW ROUTE ---
+if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production') {
+  app.get('/api/dev/preview', async (req, res) => {
+    try {
+      const dummyData = {
+        name: req.query.name || 'John Doe',
+        course: req.query.course || 'B.Tech Computer Science',
+        year: req.query.year || '1',
+        archetype: req.query.archetype || 'Innovator',
+        answers: ['Dummy Answer', 'Dummy Sponsor']
+      };
+      
+      const canvas = await generateSportsCanvas(dummyData, null);
+      const buffer = canvas.toBuffer('image/jpeg', { quality: 0.95 });
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.send(buffer);
+    } catch (err) {
+      console.error('[DevPreview] Error:', err);
+      res.status(500).send('Error generating dev preview');
+    }
+  });
+}
+
+
+// --- DOWNLOAD RAW ENDPOINT ---
+app.get('/api/download-raw/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user || !user.imageUrl) return res.status(404).send('Not found');
+
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    
+    // Stream directly from MinIO
+    const dataStream = await minioClient.getObject(BUCKET_NAME, user.imageUrl);
+    dataStream.pipe(res);
+    
+    dataStream.on('error', (e) => {
+      console.error('MinIO stream error:', e);
+      if (!res.headersSent) res.status(500).send('Error reading raw image');
+    });
+  } catch (err) {
+    console.error('Download raw error:', err);
+    res.status(500).send('Error generating file');
   }
 });
 
