@@ -49,11 +49,11 @@
 
       <!-- Screen 1: Welcome (Animated Idle Screen) -->
       <section id="screen-welcome" class="screen">
-        <div class="glass-panel text-center max-w-2xl mx-auto py-12 px-8 flex flex-col items-center justify-center relative overflow-hidden">
+        <div class="glass-panel welcome-panel text-center mx-auto flex flex-col items-center justify-center relative overflow-hidden">
           
           <!-- SRM Logo -->
-          <div class="mb-6">
-            <img src="/srm-logo.png" alt="SRM Logo" class="max-w-[240px] md:max-w-[280px] h-auto object-contain mx-auto drop-shadow-[0_0_15px_rgba(229,168,35,0.4)]" />
+          <div class="welcome-logo-wrap">
+            <img src="/srm-logo.png" alt="SRM Logo" class="srm-logo drop-shadow-[0_0_15px_rgba(229,168,35,0.4)]" />
           </div>
 
           <div class="gold-badge mb-4">
@@ -61,15 +61,16 @@
           </div>
 
           <h1 class="glow-text mb-3">Welcome to SRM</h1>
-          <p class="text-slate-300 text-lg md:text-xl font-medium max-w-lg mb-8">Learn. Leap. Lead.</p>
+          <p class="welcome-subtitle">Learn. Leap. Lead.</p>
 
-          <div class="pulse-text flex items-center justify-center gap-3 text-xl md:text-2xl cursor-pointer">
+          <div class="pulse-text flex items-center justify-center gap-3 cursor-pointer">
             <span class="w-3 h-3 rounded-full bg-[#e5a823] animate-ping"></span>
             <span>Tap Anywhere to Begin</span>
             <span class="w-3 h-3 rounded-full bg-[#e5a823] animate-ping"></span>
           </div>
 
         </div>
+
       </section>
 
       <!-- Screen 2: Form -->

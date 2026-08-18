@@ -138,6 +138,51 @@ input, textarea {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
+/* Welcome Panel — fully responsive */
+.welcome-panel {
+  padding: clamp(32px, 5vw, 72px) clamp(28px, 5vw, 72px);
+  max-width: min(80vw, 1100px);
+  width: 80vw;
+  height: 80vh;
+  justify-content: center;
+  gap: clamp(12px, 2vh, 24px);
+}
+
+.welcome-logo-wrap {
+  margin-bottom: clamp(10px, 2vh, 28px);
+}
+
+.srm-logo {
+  width: clamp(260px, 38vw, 540px);
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+.welcome-subtitle {
+  color: #94a3b8;
+  font-size: clamp(1.1rem, 2.2vw, 1.7rem);
+  font-weight: 500;
+  margin-bottom: clamp(16px, 2.5vh, 36px);
+}
+
+.pulse-text {
+  font-size: clamp(1.2rem, 2.4vw, 1.8rem);
+}
+
+/* When split-active, logo and panel fill the right 48vw */
+.app-container.split-active #screen-welcome .srm-logo {
+  width: clamp(200px, 26vw, 400px);
+}
+
+.app-container.split-active #screen-welcome .welcome-panel {
+  max-width: none;
+  width: 100%;
+  height: auto;
+  min-height: 75vh;
+}
+
 /* Typography */
 h1, h2, h3 {
   line-height: 1.2;
@@ -145,7 +190,7 @@ h1, h2, h3 {
 
 .glow-text {
   font-family: 'Outfit', sans-serif;
-  font-size: 3.5rem;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
   font-weight: 900;
   background: linear-gradient(135deg, #ffffff 0%, #f3ba2f 50%, #e5a823 100%);
   background-size: 200% auto;
@@ -153,6 +198,8 @@ h1, h2, h3 {
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 25px rgba(229, 168, 35, 0.4));
   animation: shine 4s ease infinite;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .gold-badge {
@@ -1105,8 +1152,16 @@ h1, h2, h3 {
 
 /* Split-screen layout adjustments */
 .app-container.split-active #screen-welcome .glass-panel {
-  transform: translateX(27vw);
-  transition: transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: translateX(26vw);
+  width: 46vw;
+  max-width: none;
+  padding: clamp(28px, 4vw, 56px);
+  transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.app-container.split-active #screen-welcome .glow-text {
+  white-space: normal;
+  font-size: clamp(2.6rem, 5.5vw, 5.5rem);
 }
 
 @media (max-width: 768px) {
