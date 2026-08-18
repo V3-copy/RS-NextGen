@@ -267,7 +267,7 @@
           <button id="btn-close-app" class="w-14 h-14 flex items-center justify-center text-white bg-red-500/90 hover:bg-red-600 rounded-full text-2xl font-bold border border-white/20 shadow-2xl transition-all hidden">✕</button>
         </div>
 
-        <div class="glass-panel w-full max-w-md mx-auto text-center flex flex-col items-center mt-6 sm:mt-12 max-h-[90vh] overflow-y-auto scrollbar-hide p-6">
+        <div class="glass-panel w-full max-w-md mx-auto text-center flex flex-col items-center mt-4 sm:mt-6 max-h-[85vh] overflow-y-auto scrollbar-hide p-4 sm:p-6">
           
           <!-- Circular Timer -->
           <div id="kiosk-timer-circle" class="relative flex items-center justify-center mb-4 hidden mx-auto cursor-pointer hover:scale-105 transition-transform" style="width: 80px; height: 80px;" title="Tap to restart timer">
@@ -278,20 +278,20 @@
             <span id="kiosk-timer-text" class="absolute text-white font-bold text-2xl drop-shadow-md">20</span>
           </div>
           <h2 id="success-title" class="text-3xl font-outfit font-bold mb-4 text-white">Processing...</h2>
-          <p id="status-msg" class="text-xl text-blue-400 mb-8 min-h-[30px]">Uploading to server...</p>
+          <p id="status-msg" class="text-xl text-blue-400 mb-4 sm:mb-8 min-h-[30px]">Uploading to server...</p>
           
           <div id="loading-spinner" class="spinner"></div>
           
           <div id="qr-container" class="hidden flex-col items-center mt-4 w-full">
             <p class="text-white mb-2 font-bold text-xl drop-shadow-md">Scan & Share to Reveal!</p>
-            <p class="text-white/80 mb-6 text-sm drop-shadow-sm">Scan the QR to download your HD badge!</p>
+            <p class="text-white/80 mb-3 sm:mb-6 text-sm drop-shadow-sm">Scan the QR to download your HD badge!</p>
             
             <!-- Blurred Preview with QR overlay -->
-            <div id="identity-art-container" class="relative w-full max-w-[280px] rounded-2xl overflow-hidden shadow-2xl border border-white/20 hidden">
+            <div id="identity-art-container" class="relative w-full max-w-[240px] sm:max-w-[280px] max-h-[45vh] sm:max-h-[50vh] flex justify-center items-center rounded-2xl overflow-hidden shadow-2xl border border-white/20 hidden">
               <div id="identity-art-spinner" class="canvas-spinner my-24 mx-auto"></div>
               
               <!-- The blurred canvas image -->
-              <img id="identity-art-img" class="w-full h-auto scale-105 hidden" style="filter: blur(14px) brightness(0.4);" alt="Your identity art" />
+              <img id="identity-art-img" class="w-full h-full object-cover scale-105 hidden" style="filter: blur(14px) brightness(0.4);" alt="Your identity art" />
               
               <!-- QR Code overlaid on top -->
               <div class="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
