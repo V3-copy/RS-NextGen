@@ -185,18 +185,7 @@ async function generateSportsCanvas(data = {}, userImageBuffer = null) {
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  // 4. TOP RIGHT (EVENT NAME)
-  ctx.save();
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '900 28px "Inter", "Arial Black", sans-serif';
-  ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
-  ctx.shadowBlur = 20;
-  ctx.shadowOffsetY = 0;
-  const formattedEventTop = eventName.replace(/\n/g, ' '); 
-  ctx.fillText(formattedEventTop, W - 40, 40);
-  ctx.restore();
+  // Removed Top Right Event Name
 
   // 5. CENTER IMAGE FRAME (Premium Glassmorphic Edge)
   const frameX = 140;

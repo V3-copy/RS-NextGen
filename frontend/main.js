@@ -698,7 +698,9 @@ function resetToCaptureMode() {
   if (cameraCaptureControls) cameraCaptureControls.classList.remove('hidden');
   if (cameraTopText) cameraTopText.innerText = 'Position your face in the frame';
   state.imageBlob = null;
-  if (video.paused) video.play();
+  if (video.paused) {
+    video.play().catch(e => console.warn('Video playback interrupted or not ready:', e));
+  }
 }
 
 if (btnCameraPermission) btnCameraPermission.addEventListener('click', initCamera);
@@ -744,8 +746,9 @@ function startCountdownSequence() {
 
 function takePicture() {
   const MAX_SIZE = 900;
-  let width = video.videoWidth;
-  let height = video.videoHeight;
+  // Fallback to 1280x720 if video metadata isn't fully loaded to prevent blank canvases
+  let width = video.videoWidth || 1280;
+  let height = video.videoHeight || 720;
   
   if (width > height && width > MAX_SIZE) {
     height = Math.round(height * MAX_SIZE / width);
