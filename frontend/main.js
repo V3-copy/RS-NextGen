@@ -3,10 +3,14 @@ import { io } from 'socket.io-client';
 import QRCode from 'qrcode';
 
 // Configuration
-const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-  ? 'http://localhost:3000' 
-  : `http://${window.location.hostname}:3000`;
-const KIOSK_ID = 'web-kiosk-1';
+const BACKEND_URL = (import.meta.env && typeof import.meta.env.VITE_BACKEND_URL !== 'undefined') 
+  ? import.meta.env.VITE_BACKEND_URL 
+  : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+      ? 'http://localhost:3001' 
+      : `http://${window.location.hostname}:3001`);
+const KIOSK_ID = (import.meta.env && import.meta.env.VITE_KIOSK_ID) 
+  ? import.meta.env.VITE_KIOSK_ID 
+  : 'web-kiosk-1';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const state = {

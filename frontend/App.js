@@ -5,9 +5,13 @@ import { io } from 'socket.io-client';
 import QRCode from 'react-native-qrcode-svg';
 import { Picker } from '@react-native-picker/picker';
 
-// Ensure you replace this with your actual local IP address when running on a real iPad
-const BACKEND_URL = 'http://192.168.137.190:3000'; 
-const KIOSK_ID = 'ipad-kiosk-1';
+// Configuration
+const BACKEND_URL = (typeof process !== 'undefined' && process.env && process.env.VITE_BACKEND_URL)
+  ? process.env.VITE_BACKEND_URL
+  : 'http://localhost:3001';
+const KIOSK_ID = (typeof process !== 'undefined' && process.env && process.env.VITE_KIOSK_ID)
+  ? process.env.VITE_KIOSK_ID
+  : 'ipad-kiosk-1';
 
 export default function App() {
   const [screen, setScreen] = useState('WELCOME');
