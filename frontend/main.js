@@ -114,6 +114,9 @@ let pressStartX = 0;
 let pressStartY = 0;
 
 document.body.addEventListener('pointerdown', (e) => {
+  // Ignore long press if interacting with buttons, inputs, or overlays
+  if (e.target.closest('button, input, select, textarea, #scan-prompt-overlay, #ios-pwa-prompt')) return;
+
   pressStartX = e.clientX;
   pressStartY = e.clientY;
   longPressTimer = setTimeout(() => {
@@ -139,6 +142,13 @@ document.body.addEventListener('pointermove', (e) => {
       clearTimeout(longPressTimer);
       longPressTimer = null;
     }
+  }
+});
+
+// Disable context menu (right-click / long-press default behavior) unless on input/textarea
+document.addEventListener('contextmenu', (e) => {
+  if (!e.target.closest('input, textarea')) {
+    e.preventDefault();
   }
 });
 
