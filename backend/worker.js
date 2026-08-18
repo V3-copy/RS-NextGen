@@ -8,8 +8,13 @@ const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD || undefined;
 const REDIS_DB = process.env.REDIS_DB ? parseInt(process.env.REDIS_DB) : 0;
 
-// Connect to MongoDB
-mongoose.connect(MONGO_URI)
+// Connect to MongoDB with Active Connection Pool
+const mongoOptions = {
+  maxPoolSize: process.env.MONGO_MAX_POOL_SIZE ? parseInt(process.env.MONGO_MAX_POOL_SIZE) : 50,
+  minPoolSize: process.env.MONGO_MIN_POOL_SIZE ? parseInt(process.env.MONGO_MIN_POOL_SIZE) : 5,
+};
+
+mongoose.connect(MONGO_URI, mongoOptions)
   .then(() => console.log('[Worker] MongoDB connected'))
   .catch(err => console.error('[Worker] MongoDB connection error:', err));
 

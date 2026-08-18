@@ -83,8 +83,13 @@ async function initMinio() {
 }
 initMinio();
 
-// Connect to MongoDB
-mongoose.connect(MONGO_URI)
+// Connect to MongoDB with Active Connection Pool
+const mongoOptions = {
+  maxPoolSize: process.env.MONGO_MAX_POOL_SIZE ? parseInt(process.env.MONGO_MAX_POOL_SIZE) : 50,
+  minPoolSize: process.env.MONGO_MIN_POOL_SIZE ? parseInt(process.env.MONGO_MIN_POOL_SIZE) : 5,
+};
+
+mongoose.connect(MONGO_URI, mongoOptions)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
