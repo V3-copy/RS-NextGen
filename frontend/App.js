@@ -13,6 +13,13 @@ const KIOSK_ID = (typeof process !== 'undefined' && process.env && process.env.V
   ? process.env.VITE_KIOSK_ID
   : 'ipad-kiosk-1';
 
+// Global Socket Instance
+const appSocket = io(BACKEND_URL, {
+  transports: ['websocket'],
+  reconnection: true
+});
+
+
 export default function App() {
   const [screen, setScreen] = useState('WELCOME');
   const [userData, setUserData] = useState({ name: '', department: 'CS', year: '1st', whatsappNumber: '' });
@@ -44,23 +51,19 @@ export default function App() {
 
   useEffect(() => {
     if (screen === 'SUCCESS') {
-      // Connect to websocket when entering success screen
-      const socket = io(BACKEND_URL);
-      
-      socket.on('connect', () => {
-        console.log('Connected to WebSocket server');
-      });
-
-      socket.on('status', (data) => {
-        setStatusMsg(data.message);
-      });
-
-      socket.on('whatsapp_failed', (data) => {
+      const handleStatus = (data) => setStatusMsg(data.message);
+      const handleWhatsappFailed = (data) => {
         setStatusMsg(data.message);
         setQrFallback(data.downloadUrl);
-      });
+      };
 
-      return () => socket.disconnect();
+      appSocket.on('status', handleStatus);
+      appSocket.on('whatsapp_failed', handleWhatsappFailed);
+
+      return () => {
+        appSocket.off('status', handleStatus);
+        appSocket.off('whatsapp_failed', handleWhatsappFailed);
+      };
     }
   }, [screen]);
 
@@ -98,21 +101,15 @@ export default function App() {
       // Actually, we should tell the backend which socket room to join, but in this simple demo, 
       // the backend just broadcasts or the socket joins the room.
       // Wait, let's just make the backend broadcast to the room based on the response.
-      const socket = io(BACKEND_URL);
-      socket.emit('join_room', resData.roomId);
-      
-      socket.on('status', (data) => {
-        setStatusMsg(data.message);
-        if(data.status === 'success') {
-          setTimeout(resetApp, 5000); // go back to welcome after 5s of success
-        }
-      });
+      // Join the socket room for real-time updates
+      appSocket.emit('join_room', resData.roomId);
 
-      socket.on('whatsapp_failed', (data) => {
-        setStatusMsg(data.message);
-        setQrFallback(data.downloadUrl);
-        setTimeout(resetApp, 15000); // give 15s to scan QR code
-      });
+      // Listeners are managed by the useEffect when screen becomes 'SUCCESS'
+      
+      // Fallback timeouts in case socket events fail
+      setTimeout(() => {
+        if (screen === 'SUCCESS') resetApp();
+      }, 15000);
       
     } catch (err) {
       console.error(err);
