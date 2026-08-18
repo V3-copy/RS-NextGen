@@ -1,8 +1,8 @@
 {
-  "name": "SRM Identity Forger",
+  "name": "SRM Inaugration",
   "short_name": "SRM Forger",
   "start_url": ".",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#0a0a0a",
   "theme_color": "#4c6ef5",
   "description": "Create your SRM Identity",

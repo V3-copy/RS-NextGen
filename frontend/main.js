@@ -492,6 +492,13 @@ if (loginForm) {
 
 // ─── WELCOME ──────────────────────────────────────────────────────────────────
 screens.welcome.addEventListener('click', () => {
+  // Attempt to enter fullscreen mode for maximum immersion
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(e => console.log('Fullscreen rejected:', e));
+  } else if (document.documentElement.webkitRequestFullscreen) { /* Safari */
+    document.documentElement.webkitRequestFullscreen().catch(e => console.log('Fullscreen rejected:', e));
+  }
+  
   switchScreen('form');
   inputName.focus();
 });
