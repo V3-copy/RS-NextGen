@@ -139,7 +139,7 @@ mongoose.connect(MONGO_URI, mongoOptions)
   .catch(err => console.error('[MongoDB] Connection Error:', err.message));
 
 // --- WEBSOCKETS ---
-const APP_VERSION = process.env.APP_VERSION || '1.1.2';
+const APP_VERSION = process.env.APP_VERSION || '1.1.3';
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
