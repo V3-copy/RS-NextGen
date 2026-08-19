@@ -1255,6 +1255,14 @@ h1, h2, h3 {
   box-shadow: 0 10px 30px rgba(0,0,0,0.6);
   border: 1px solid rgba(229, 168, 35, 0.25);
   flex-shrink: 0;
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.5s infinite linear;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .drift-item img {
@@ -1262,6 +1270,12 @@ h1, h2, h3 {
   height: 100%;
   display: block;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.drift-item img.loaded {
+  opacity: 1;
 }
 
 @keyframes driftVertical {

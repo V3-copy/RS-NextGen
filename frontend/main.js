@@ -480,7 +480,7 @@ function renderDriftWall() {
     items.forEach(img => {
       const imgDiv = document.createElement('div');
       imgDiv.className = 'drift-item';
-      imgDiv.innerHTML = `<img src="${BACKEND_URL}${img.url}" alt="${img.name}" loading="lazy" />`;
+      imgDiv.innerHTML = `<img src="${BACKEND_URL}${img.url}" alt="${img.name}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.src='https://via.placeholder.com/300x400?text=Unavailable'; this.classList.add('loaded')" />`;
       colDiv.appendChild(imgDiv);
     });
     
