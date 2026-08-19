@@ -10,7 +10,7 @@ const BACKEND_URL = (import.meta.env && typeof import.meta.env.VITE_BACKEND_URL 
   : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
       ? 'http://localhost:3001' 
       : window.location.origin);
-const APP_VERSION = '1.1.3';
+const APP_VERSION = '1.1.4';
 
 // Global Socket for App Updates
 const appSocket = io(BACKEND_URL, {

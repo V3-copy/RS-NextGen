@@ -139,7 +139,7 @@ mongoose.connect(MONGO_URI, mongoOptions)
   .catch(err => console.error('[MongoDB] Connection Error:', err.message));
 
 // --- WEBSOCKETS ---
-const APP_VERSION = process.env.APP_VERSION || '1.1.3';
+const APP_VERSION = process.env.APP_VERSION || '1.1.4';
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
@@ -364,6 +364,25 @@ app.delete('/api/admin/users/:userId', verifyAdmin, async (req, res) => {
     res.json({ success: true, message: 'User deleted successfully' });
   } catch (err) {
     console.error('Delete user error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- UPDATE SINGLE USER ---
+app.put('/api/admin/users/:userId', verifyAdmin, async (req, res) => {
+  try {
+    const { name, course, year, gender, whatsappNumber, email, archetype } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.userId,
+      { name, course, year, gender, whatsappNumber, email, archetype },
+      { new: true, runValidators: true }
+    );
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    broadcastMetrics();
+    res.json({ success: true, user, message: 'User updated successfully' });
+  } catch (err) {
+    console.error('Update user error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

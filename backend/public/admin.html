@@ -242,6 +242,77 @@
     </div>
   </main>
 
+  <!-- EDIT USER MODAL -->
+  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl overflow-hidden max-w-lg w-full flex flex-col shadow-2xl">
+      <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+        <h3 class="font-bold text-lg text-gray-800">Edit User Details</h3>
+        <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="p-6">
+        <form id="edit-user-form" onsubmit="saveUserEdit(event)">
+          <input type="hidden" id="edit-user-id" />
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input type="text" id="edit-name" required class="w-full border border-gray-200 bg-gray-50 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm" />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                <select id="edit-department" required class="w-full border border-gray-200 bg-gray-50 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm">
+                  <!-- Options injected dynamically -->
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                <select id="edit-year" required class="w-full border border-gray-200 bg-gray-50 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm">
+                  <option value="1">1st Year</option>
+                  <option value="2">2nd Year</option>
+                  <option value="3">3rd Year</option>
+                  <option value="4">4th Year</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                <select id="edit-gender" required class="w-full border border-gray-200 bg-gray-50 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm">
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+                <input type="text" id="edit-whatsapp" class="w-full border border-gray-200 bg-gray-50 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" id="edit-email" class="w-full border border-gray-200 bg-gray-50 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Archetype</label>
+              <select id="edit-archetype" class="w-full border border-gray-200 bg-gray-50 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm">
+                <option value="Explorer">Explorer</option>
+                <option value="Problem Solver">Problem Solver</option>
+                <option value="Innovator">Innovator</option>
+                <option value="Aspiring Entrepreneur">Aspiring Entrepreneur</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-3">
+            <button type="button" onclick="closeEditModal()" class="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors shadow-sm">Cancel</button>
+            <button type="submit" id="btn-save-edit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm flex items-center gap-2">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- BADGE MODAL -->
   <div id="badge-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-xl overflow-hidden max-w-3xl w-full flex flex-col">
@@ -328,6 +399,8 @@
 
     // --- USERS TABLE ---
     let currentPage = 1;
+    let currentUsers = [];
+
     async function fetchUsers(page) {
       currentPage = page;
       const sortBy = document.getElementById('user-sort').value;
@@ -346,6 +419,7 @@
         const data = await res.json();
         
         if (data.success) {
+          currentUsers = data.users;
           tbody.innerHTML = '';
           if (data.users.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">No users found.</td></tr>';
@@ -361,6 +435,8 @@
               ? `<button onclick="openBadgeModal('${u._id}')" class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded text-xs font-medium transition-colors">View Badge</button>` 
               : `<span class="text-gray-400 text-xs">No Photo</span>`;
 
+            const editBtnHTML = `<button onclick="openEditModal('${u._id}')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded text-xs font-medium transition-colors ml-2">Edit</button>`;
+
             const deleteBtnHTML = `<button onclick="deleteUser('${u._id}')" class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-3 py-1 rounded text-xs font-medium transition-colors ml-2">Delete</button>`;
 
             tr.innerHTML = `
@@ -369,7 +445,7 @@
               <td class="p-4 text-gray-600">${u.course}</td>
               <td class="p-4 text-gray-600">${u.gender}</td>
               <td class="p-4 text-gray-500 text-xs">${dateStr}</td>
-              <td class="p-4 text-right">${badgeBtnHTML}${deleteBtnHTML}</td>
+              <td class="p-4 text-right whitespace-nowrap">${badgeBtnHTML}${editBtnHTML}${deleteBtnHTML}</td>
             `;
             tbody.appendChild(tr);
           });
@@ -397,6 +473,83 @@
       } catch (err) {
         console.error('Error deleting user:', err);
         alert('Error deleting user');
+      }
+    }
+
+    // --- EDIT MODAL ---
+    function populateEditDeptFilter() {
+      const select = document.getElementById('edit-department');
+      select.innerHTML = '';
+      departments.forEach(dept => {
+        const opt = document.createElement('option');
+        opt.value = dept;
+        opt.textContent = dept;
+        select.appendChild(opt);
+      });
+    }
+
+    function openEditModal(userId) {
+      const user = currentUsers.find(u => u._id === userId);
+      if (!user) return;
+      
+      populateEditDeptFilter(); // Ensure the departments are loaded
+
+      document.getElementById('edit-user-id').value = user._id;
+      document.getElementById('edit-name').value = user.name || '';
+      document.getElementById('edit-department').value = user.course || '';
+      document.getElementById('edit-year').value = user.year || '1';
+      document.getElementById('edit-gender').value = user.gender || 'Male';
+      document.getElementById('edit-whatsapp').value = user.whatsappNumber || '';
+      document.getElementById('edit-email').value = user.email || '';
+      document.getElementById('edit-archetype').value = user.archetype || 'Explorer';
+
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+      document.getElementById('edit-user-form').reset();
+    }
+
+    async function saveUserEdit(event) {
+      event.preventDefault();
+      const userId = document.getElementById('edit-user-id').value;
+      const btn = document.getElementById('btn-save-edit');
+      const originalText = btn.innerHTML;
+      
+      btn.disabled = true;
+      btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...`;
+
+      const payload = {
+        name: document.getElementById('edit-name').value,
+        course: document.getElementById('edit-department').value,
+        year: document.getElementById('edit-year').value,
+        gender: document.getElementById('edit-gender').value,
+        whatsappNumber: document.getElementById('edit-whatsapp').value,
+        email: document.getElementById('edit-email').value,
+        archetype: document.getElementById('edit-archetype').value
+      };
+
+      try {
+        const res = await authFetch(`/api/admin/users/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          closeEditModal();
+          fetchUsers(currentPage); // refresh current page
+        } else {
+          alert(data.error || 'Failed to update user');
+        }
+      } catch (err) {
+        console.error('Error updating user:', err);
+        alert('Error updating user');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
       }
     }
 
