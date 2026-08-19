@@ -350,6 +350,24 @@ app.delete('/api/admin/reset', verifyAdmin, async (req, res) => {
   }
 });
 
+// --- DELETE SINGLE USER ---
+app.delete('/api/admin/users/:userId', verifyAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    if (user.imageUrl) {
+      minioClient.removeObject(BUCKET_NAME, user.imageUrl).catch(err => console.error('Failed to remove image from MinIO:', err));
+    }
+    
+    broadcastMetrics();
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (err) {
+    console.error('Delete user error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // --- ADMIN BADGE PREVIEW ---
 app.get('/api/admin/preview-badge/:userId', verifyAdmin, async (req, res) => {
   try {
